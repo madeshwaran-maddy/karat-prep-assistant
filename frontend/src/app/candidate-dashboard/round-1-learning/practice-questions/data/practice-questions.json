@@ -1,0 +1,200 @@
+{
+    "equalsAndHashCode": [
+    {
+      "id": "equals",
+      "title": "equals()",
+      "questions": [
+        {
+          "questionNo": 1,
+          "buggyCode": "class Employee {\n    int id;\n\n    Employee(int id) {\n        this.id = id;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        Employee other = (Employee) obj;\n        return this.id == other.id;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Employee e = new Employee(1);\n        System.out.println(e.equals(\"Hello\"));\n    }\n}",
+          "answer": "ClassCastException is thrown because equals() blindly casts the Object to Employee.",
+          "explanation": "The equals() method should first check if the object is null and whether it is an instance of Employee before casting. Otherwise, comparing with another type causes ClassCastException."
+        },
+        {
+          "questionNo": 2,
+          "buggyCode": "class Employee {\n    String name;\n\n    Employee(String name) {\n        this.name = name;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        Employee other = (Employee) obj;\n        return name.equals(other.name);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Employee e1 = new Employee(null);\n        Employee e2 = new Employee(null);\n        System.out.println(e1.equals(e2));\n    }\n}",
+          "answer": "NullPointerException occurs because name is null.",
+          "explanation": "Calling equals() on a null reference throws NullPointerException. Use Objects.equals(name, other.name) for null-safe comparison."
+        },
+        {
+          "questionNo": 3,
+          "buggyCode": "class Employee {\n    int id;\n\n    Employee(int id) {\n        this.id = id;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        Employee other = (Employee) obj;\n        return this.id >= other.id;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Employee e1 = new Employee(5);\n        Employee e2 = new Employee(3);\n\n        System.out.println(e1.equals(e2));\n        System.out.println(e2.equals(e1));\n    }\n}",
+          "answer": "The equals() contract is violated because symmetry is broken.",
+          "explanation": "If e1.equals(e2) is true, then e2.equals(e1) must also be true. The implementation using >= breaks the symmetry rule required by equals()."
+        }
+      ]
+    },
+    {
+      "id": "hashcode",
+      "title": "hashCode()",
+      "questions": [
+        {
+          "questionNo": 1,
+          "buggyCode": "class Employee {\n    int id;\n\n    Employee(int id) {\n        this.id = id;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        Employee other = (Employee) obj;\n        return id == other.id;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Set<Employee> set = new HashSet<>();\n        set.add(new Employee(1));\n        set.add(new Employee(1));\n\n        System.out.println(set.size());\n    }\n}",
+          "answer": "hashCode() is not overridden.",
+          "explanation": "HashSet first uses hashCode() to determine the bucket. Since each Employee has a different default hash code, both objects are stored even though equals() returns true."
+        },
+        {
+          "questionNo": 2,
+          "buggyCode": "class Employee {\n    int id;\n\n    Employee(int id) {\n        this.id = id;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        Employee other = (Employee) obj;\n        return id == other.id;\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(id);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Set<Employee> set = new HashSet<>();\n\n        Employee e = new Employee(1);\n        set.add(e);\n\n        e.id = 10;\n\n        System.out.println(set.contains(e));\n    }\n}",
+          "answer": "The object's hashCode changed after it was inserted into the HashSet.",
+          "explanation": "Changing a field used in hashCode() after insertion changes the bucket where the object should belong. HashSet searches the old bucket and cannot find the object."
+        },
+        {
+          "questionNo": 3,
+          "buggyCode": "class Product {\n    String code;\n    double price;\n\n    Product(String code, double price) {\n        this.code = code;\n        this.price = price;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        Product p = (Product) obj;\n        return code.equals(p.code);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(code, price);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Map<Product, String> map = new HashMap<>();\n\n        map.put(new Product(\"P101\", 100), \"Laptop\");\n\n        System.out.println(map.get(new Product(\"P101\", 200)));\n    }\n}",
+          "answer": "equals() and hashCode() use different fields.",
+          "explanation": "equals() compares only code, while hashCode() uses both code and price. Equal objects must always produce the same hash code."
+        }
+      ]
+    },
+    {
+      "id": "comparator",
+      "title": "Comparator & Comparable",
+      "questions": [
+        {
+          "questionNo": 1,
+          "buggyCode": "class Employee implements Comparable<Employee> {\n    int id;\n\n    Employee(int id) {\n        this.id = id;\n    }\n\n    @Override\n    public int compareTo(Employee e) {\n        return 0;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Set<Employee> set = new TreeSet<>();\n        set.add(new Employee(1));\n        set.add(new Employee(2));\n\n        System.out.println(set.size());\n    }\n}",
+          "answer": "compareTo() always returns 0, so TreeSet treats every object as a duplicate.",
+          "explanation": "TreeSet uses compareTo() to determine ordering and uniqueness. Returning 0 means all objects are considered equal."
+        },
+        {
+          "questionNo": 2,
+          "buggyCode": "List<String> names = Arrays.asList(\"John\", null, \"Alex\");\nCollections.sort(names, (a, b) -> a.compareTo(b));",
+          "answer": "NullPointerException occurs because compareTo() is called on a null value.",
+          "explanation": "Comparator logic should handle null values using Comparator.nullsFirst() or Comparator.nullsLast()."
+        },
+        {
+          "questionNo": 3,
+          "buggyCode": "class Employee implements Comparable<Employee> {\n    int id;\n\n    Employee(int id) {\n        this.id = id;\n    }\n\n    @Override\n    public int compareTo(Employee e) {\n        return this.id > e.id ? 1 : 0;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        TreeSet<Employee> set = new TreeSet<>();\n        set.add(new Employee(3));\n        set.add(new Employee(2));\n        set.add(new Employee(1));\n\n        System.out.println(set.size());\n    }\n}",
+          "answer": "The compareTo() contract is violated.",
+          "explanation": "compareTo() must return a negative value, zero, or a positive value. Returning only 1 or 0 produces incorrect ordering and causes TreeSet to lose elements."
+        }
+      ]
+    }
+  ],
+  "collections": [
+    {
+      "id": "list",
+      "title": "List",
+      "questions": [
+        {
+          "questionNo": 1,
+          "buggyCode": "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<String> fruits = Arrays.asList(\"Apple\", \"Banana\", \"Orange\");\n        fruits.add(\"Mango\");\n        System.out.println(fruits);\n    }\n}",
+          "answer": "UnsupportedOperationException is thrown.",
+          "explanation": "Arrays.asList() returns a fixed-size List backed by the array. Elements can be updated using set(), but add() and remove() operations are not supported. Use new ArrayList<>(Arrays.asList(...)) if you need a resizable list."
+        },
+        {
+          "questionNo": 2,
+          "buggyCode": "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<Integer> numbers = Arrays.asList(10, 20, 30);\n\n        for (int i = 0; i <= numbers.size(); i++) {\n            System.out.println(numbers.get(i));\n        }\n    }\n}",
+          "answer": "IndexOutOfBoundsException occurs because the loop uses <= instead of <.",
+          "explanation": "The last valid index in a List is size() - 1. Using <= causes an attempt to access index size(), which does not exist."
+        },
+        {
+          "questionNo": 3,
+          "buggyCode": "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<String> languages = new ArrayList<>(Arrays.asList(\"Java\", \"Python\", \"C++\"));\n\n        for (String lang : languages) {\n            if (lang.equals(\"Python\")) {\n                languages.remove(lang);\n            }\n        }\n\n        System.out.println(languages);\n    }\n}",
+          "answer": "ConcurrentModificationException is thrown.",
+          "explanation": "The enhanced for-loop internally uses an Iterator. Modifying the List directly while iterating invalidates the iterator. Use Iterator.remove() or removeIf() instead."
+        }
+      ]
+    },
+    {
+      "id": "set",
+      "title": "Set",
+      "questions": [
+        {
+          "questionNo": 1,
+          "buggyCode": "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Set<String> set = new HashSet<>();\n\n        set.add(\"Java\");\n        set.add(\"Python\");\n        set.add(\"C++\");\n\n        System.out.println(set);\n    }\n}",
+          "answer": "The output order is unpredictable.",
+          "explanation": "HashSet does not preserve insertion order. If insertion order is required, use LinkedHashSet. If sorted order is required, use TreeSet."
+        },
+        {
+          "questionNo": 2,
+          "buggyCode": "import java.util.*;\n\nclass Employee {\n    int id;\n\n    Employee(int id) {\n        this.id = id;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Set<Employee> employees = new HashSet<>();\n\n        employees.add(new Employee(101));\n        employees.add(new Employee(101));\n\n        System.out.println(employees.size());\n    }\n}",
+          "answer": "Duplicate objects are inserted because equals() and hashCode() are not overridden.",
+          "explanation": "HashSet determines uniqueness using both hashCode() and equals(). Since Employee inherits Object implementations, each object is treated as unique."
+        },
+        {
+          "questionNo": 3,
+          "buggyCode": "import java.util.*;\n\nclass Student {\n    int rollNo;\n\n    Student(int rollNo) {\n        this.rollNo = rollNo;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        Student s = (Student) obj;\n        return rollNo == s.rollNo;\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(rollNo);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Student s = new Student(1);\n\n        Set<Student> set = new HashSet<>();\n        set.add(s);\n\n        s.rollNo = 10;\n\n        System.out.println(set.contains(s));\n    }\n}",
+          "answer": "contains() returns false because the hash code changed after insertion.",
+          "explanation": "HashSet stores objects in buckets determined by their hashCode(). Changing a field used in hashCode() after insertion places the object in the wrong bucket, making lookups fail."
+        }
+      ]
+    },
+    {
+      "id": "map",
+      "title": "Map",
+      "questions": [
+        {
+          "questionNo": 1,
+          "buggyCode": "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Map<String, Integer> scores = new HashMap<>();\n\n        scores.put(\"John\", 90);\n        scores.put(\"John\", 95);\n\n        System.out.println(scores.size());\n        System.out.println(scores.get(\"John\"));\n    }\n}",
+          "answer": "HashMap replaces the existing value for duplicate keys.",
+          "explanation": "A Map cannot contain duplicate keys. When the same key is inserted again, the previous value is overwritten."
+        },
+        {
+          "questionNo": 2,
+          "buggyCode": "import java.util.*;\n\nclass Employee {\n    int id;\n\n    Employee(int id) {\n        this.id = id;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Map<Employee, String> map = new HashMap<>();\n\n        map.put(new Employee(1), \"John\");\n\n        System.out.println(map.get(new Employee(1)));\n    }\n}",
+          "answer": "null is returned because equals() and hashCode() are not overridden.",
+          "explanation": "HashMap uses hashCode() to locate the bucket and equals() to compare keys. Two different Employee objects are considered different because they inherit Object implementations."
+        },
+        {
+          "questionNo": 3,
+          "buggyCode": "import java.util.*;\n\nclass Product {\n    int id;\n\n    Product(int id) {\n        this.id = id;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        Product p = (Product) obj;\n        return id == p.id;\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(id);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Product p = new Product(100);\n\n        Map<Product, String> map = new HashMap<>();\n        map.put(p, \"Laptop\");\n\n        p.id = 200;\n\n        System.out.println(map.get(p));\n    }\n}",
+          "answer": "null is returned because the key was modified after insertion.",
+          "explanation": "Mutable objects should never be used as HashMap keys if fields involved in equals() or hashCode() can change. Once the hash code changes, HashMap can no longer locate the key."
+        }
+      ]
+    }
+  ],
+  "exceptions": [
+    {
+      "id": "exception",
+      "title": "Exception",
+      "questions": [
+        {
+          "questionNo": 1,
+          "buggyCode": "import java.io.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        FileReader reader = new FileReader(\"input.txt\");\n        System.out.println(\"File Opened\");\n    }\n}",
+          "answer": "The code does not compile because FileReader throws FileNotFoundException, which is a checked exception.",
+          "explanation": "Checked exceptions must either be handled using a try-catch block or declared using the throws keyword. The compiler ensures checked exceptions are properly handled."
+        },
+        {
+          "questionNo": 2,
+          "buggyCode": "public class Main {\n    public static void main(String[] args) {\n        try {\n            int result = 10 / 0;\n        } catch (Exception e) {\n            System.out.println(\"General Exception\");\n        } catch (ArithmeticException e) {\n            System.out.println(\"Arithmetic Exception\");\n        }\n    }\n}",
+          "answer": "The code does not compile because the ArithmeticException catch block is unreachable.",
+          "explanation": "Catch blocks should always be ordered from the most specific exception to the most general exception. Since Exception catches every exception, the compiler reports the ArithmeticException block as unreachable."
+        },
+        {
+          "questionNo": 3,
+          "buggyCode": "public class Main {\n    public static void main(String[] args) {\n        try {\n            throw new RuntimeException(\"Original Exception\");\n        } finally {\n            throw new IllegalStateException(\"Finally Exception\");\n        }\n    }\n}",
+          "answer": "The IllegalStateException from the finally block hides the original RuntimeException.",
+          "explanation": "The finally block always executes. If it throws another exception, the original exception is suppressed, making debugging difficult. Avoid throwing exceptions from finally blocks."
+        }
+      ]
+    },
+    {
+      "id": "customException",
+      "title": "Custom Exception",
+      "questions": [
+        {
+          "questionNo": 1,
+          "buggyCode": "class InvalidAgeException extends Exception {\n    public InvalidAgeException(String message) {\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        try {\n            throw new InvalidAgeException(\"Age must be greater than 18\");\n        } catch (Exception e) {\n            System.out.println(e.getMessage());\n        }\n    }\n}",
+          "answer": "The output is null because the exception message is never passed to the parent Exception class.",
+          "explanation": "A custom exception constructor should call super(message). Without calling the superclass constructor, the exception message is never initialized."
+        },
+        {
+          "questionNo": 2,
+          "buggyCode": "class InvalidUserException extends Exception {\n}\n\npublic class Main {\n    public static void validate() {\n        throw new InvalidUserException();\n    }\n\n    public static void main(String[] args) {\n        validate();\n    }\n}",
+          "answer": "The code does not compile because InvalidUserException is a checked exception.",
+          "explanation": "Since the custom exception extends Exception, it becomes a checked exception. The method must either catch it or declare it using throws. If an unchecked exception is desired, extend RuntimeException instead."
+        },
+        {
+          "questionNo": 3,
+          "buggyCode": "class DatabaseException extends RuntimeException {\n    public DatabaseException(String message) {\n        super(message);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        try {\n            throw new java.sql.SQLException(\"Connection Failed\");\n        } catch (java.sql.SQLException e) {\n            throw new DatabaseException(\"Database Error\");\n        }\n    }\n}",
+          "answer": "The original SQLException stack trace is lost.",
+          "explanation": "When wrapping exceptions, always preserve the original cause by passing it to the custom exception constructor (for example, super(message, cause)). Otherwise, debugging becomes difficult because the original exception information is discarded."
+        }
+      ]
+    }
+  ]
+}

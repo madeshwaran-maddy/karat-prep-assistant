@@ -1,0 +1,73 @@
+{
+    "collections": [
+        {
+            "id": "list",
+            "title": "List",
+            "explanation": [
+                "List is an ordered collection.",
+                "Allows duplicate elements.",
+                "Index based access."
+            ],
+            "keyConcepts": [
+                "ArrayList is backed by an array.",
+                "LinkedList is backed by a doubly linked list.",
+                "Insertion order is preserved."
+            ],
+            "commonMistakes": [
+                "Using LinkedList when random access is required.",
+                "Using ArrayList for frequent insertions."
+            ],
+            "codeExample": "List<String> names = new ArrayList<>();\nnames.add(\"John\");\nnames.add(\"Alex\");\nSystem.out.println(names);",
+            "debuggingScenario": [
+                "Duplicate values appearing.",
+                "IndexOutOfBoundsException.",
+                "ConcurrentModificationException."
+            ]
+        },
+        {
+            "id": "set",
+            "title": "Set",
+            "explanation": [
+                "Stores only unique values.",
+                "No duplicate elements allowed."
+            ],
+            "keyConcepts": [
+                "HashSet",
+                "LinkedHashSet",
+                "TreeSet"
+            ],
+            "commonMistakes": [
+                "Expecting insertion order in HashSet.",
+                "equals/hashCode not overridden."
+            ],
+            "codeExample": "Set<Integer> set = new HashSet<>();\nset.add(10);\nset.add(20);\nSystem.out.println(set);",
+            "debuggingScenario": [
+                "Duplicate objects still inserted.",
+                "Incorrect equals implementation."
+            ]
+        },
+        {
+            "id": "map",
+            "title": "Map",
+            "explanation": [
+                "Map stores data as key-value pairs.",
+                "Keys are unique and values can repeat.",
+                "HashMap does not maintain order."
+            ],
+            "keyConcepts": [
+                "HashMap",
+                "LinkedHashMap",
+                "TreeMap"
+            ],
+            "commonMistakes": [
+                "Using mutable objects as keys.",
+                "Incorrect hashCode implementation."
+            ],
+            "codeExample": "Map<String,Integer> scores = new HashMap<>();\nscores.put(\"Aman\",90);\nscores.put(\"John\",85);\nSystem.out.println(scores.get(\"Aman\"));",
+            "debuggingScenario": [
+                "Duplicate customer IDs.",
+                "Wrong equals/hashCode implementation."
+            ]
+        }
+    ]
+}
