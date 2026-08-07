@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "httpx": "^3.0.1",
+    "install": "^0.13.0",
+    "pip": "^0.0.1",
+    "zustand": "^5.0.14"
+  }
+}

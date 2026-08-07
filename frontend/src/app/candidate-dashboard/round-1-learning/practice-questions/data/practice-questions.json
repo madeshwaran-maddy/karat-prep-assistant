@@ -143,6 +143,12 @@
           "buggyCode": "import java.util.*;\n\nclass Product {\n    int id;\n\n    Product(int id) {\n        this.id = id;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        Product p = (Product) obj;\n        return id == p.id;\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(id);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Product p = new Product(100);\n\n        Map<Product, String> map = new HashMap<>();\n        map.put(p, \"Laptop\");\n\n        p.id = 200;\n\n        System.out.println(map.get(p));\n    }\n}",
           "answer": "null is returned because the key was modified after insertion.",
           "explanation": "Mutable objects should never be used as HashMap keys if fields involved in equals() or hashCode() can change. Once the hash code changes, HashMap can no longer locate the key."
+        },
+        {
+          "questionNo": 4,
+          "buggyCode": "import java.util.*;\n\nclass Product {\n    int id;\n\n    Product(int id) {\n        this.id = id;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        Product p = (Product) obj;\n        return id == p.id;\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(id);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Product p = new Product(100);\n\n        Map<Product, String> map = new HashMap<>();\n        map.put(p, \"Laptop\");\n\n        p.id = 200;\n\n        System.out.println(map.get(p));\n    }\n}",
+          "answer": "null is returned because the key was modified after insertion.",
+          "explanation": "Mutable objects should never be used as HashMap keys if fields involved in equals() or hashCode() can change. Once the hash code changes, HashMap can no longer locate the key."
         }
       ]
     }

@@ -1,0 +1,159 @@
+"use client";
+
+import { useCallback, useEffect } from "react";
+
+import {
+  loadDrills,
+  generateQuestion,
+  evaluateQuestion,
+} from "../services/debuggingApi";
+
+import {
+  Drill,
+  EvaluateResponse,
+  GenerateResponse,
+} from "../types/drill";
+
+import { useDrillStore } from "../store/drillStore";
+
+export function useDrill() {
+  const {
+    collections,
+    selectedDrill,
+    generatedQuestion,
+    editorCode,
+    evaluation,
+    loading,
+    evaluating,
+    resultDrawerOpen,
+    setCollections,
+    setSelectedDrill,
+    setGeneratedQuestion,
+    setEditorCode,
+    setEvaluation,
+    setLoading,
+    setEvaluating,
+    openDrawer,
+    closeDrawer,
+    reset,
+  } = useDrillStore();
+
+  const generate = useCallback(
+    async (drill?: Drill) => {
+      const currentDrill = drill || selectedDrill;
+
+      if (!currentDrill) {
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setGeneratedQuestion(null);
+        setEditorCode("");
+
+        const response: GenerateResponse = await generateQuestion({
+          id: currentDrill.id,
+        });
+
+        setGeneratedQuestion(response);
+        setEditorCode(response.code);
+      } catch (error) {
+        console.error("Generation failed", error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [selectedDrill, setLoading, setGeneratedQuestion, setEditorCode]
+  );
+
+  const initializeDrills = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await loadDrills();
+      setCollections(data);
+
+      const firstCategory = Object.keys(data)[0];
+      if (firstCategory) {
+        const firstDrill = data[firstCategory][0];
+        if (firstDrill) {
+          setSelectedDrill(firstDrill);
+          await generate(firstDrill);
+        }
+      }
+    } catch (error) {
+      console.error("Failed loading drills", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [setCollections, setSelectedDrill, setLoading, generate]);
+
+  const selectDrill = useCallback(
+    async (drill: Drill) => {
+      setSelectedDrill(drill);
+      setEvaluation(null);
+      closeDrawer();
+      await generate(drill);
+    },
+    [closeDrawer, setEvaluation, setSelectedDrill, generate]
+  );
+
+  const generateAgain = useCallback(async () => {
+    await generate();
+  }, [generate]);
+
+  const updateCode = useCallback((code: string) => {
+    setEditorCode(code);
+  }, [setEditorCode]);
+
+  const submitSolution = useCallback(async () => {
+    if (!selectedDrill) {
+      return;
+    }
+
+    if (!editorCode.trim()) {
+      return;
+    }
+
+    try {
+      setEvaluating(true);
+      const response: EvaluateResponse = await evaluateQuestion({
+        id: selectedDrill.id,
+        userCode: editorCode,
+      });
+
+      setEvaluation(response);
+      openDrawer();
+    } catch (error) {
+      console.error("Evaluation failed", error);
+    } finally {
+      setEvaluating(false);
+    }
+  }, [selectedDrill, editorCode, setEvaluating, setEvaluation, openDrawer]);
+
+  const closeResult = useCallback(() => {
+    closeDrawer();
+  }, [closeDrawer]);
+
+  useEffect(() => {
+    initializeDrills();
+  }, [initializeDrills]);
+
+  return {
+    collections,
+    selectedDrill,
+    generatedQuestion,
+    editorCode,
+    evaluation,
+    loading,
+    evaluating,
+    resultDrawerOpen,
+    initializeDrills,
+    selectDrill,
+    generateQuestion: generate,
+    generateAgain,
+    updateCode,
+    submitSolution,
+    closeResult,
+    reset,
+  };
+}

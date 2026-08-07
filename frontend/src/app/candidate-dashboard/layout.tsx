@@ -14,7 +14,8 @@ export default function CandidateDashboardLayout({ children }: { children: React
   const pathname = usePathname();
   const hideSidebar =
     pathname?.includes("/round-1-learning/concepts") ||
-    pathname?.includes("/round-1-learning/practice-questions");
+    pathname?.includes("/round-1-learning/practice-questions") ||
+    pathname?.includes("/round-1-learning/debugging-drill");
 
   const pageTitle = pathname?.includes("/round-1-learning/concepts")
     ? "Round 1 Concepts"

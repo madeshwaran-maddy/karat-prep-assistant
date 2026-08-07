@@ -60,35 +60,26 @@ export default function RoundOneLearning() {
           </Link>
         </article>
 
-        <article className="rounded-[28px] border border-slate-200 bg-slate-50 p-6 shadow-sm shadow-slate-200/40">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-3xl bg-sky-50 text-sky-700">
-              <span className="text-xl">&lt;/&gt;</span>
+        <article className="rounded-[28px] border border-slate-200 bg-slate-50 p-6 shadow-sm shadow-slate-200/40 lg:col-span-2 lg:flex lg:justify-center">
+          <div className="w-full max-w-[32rem]">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-3xl bg-sky-50 text-sky-700">
+                <span className="text-xl">&lt;/&gt;</span>
+              </div>
+              <h2 className="text-xl font-semibold text-slate-950">Debugging Drills</h2>
             </div>
-            <h2 className="text-xl font-semibold text-slate-950">Debugging Drills</h2>
+            <p className="mt-5 text-sm leading-6 text-slate-600">
+              Practice concept-based buggy code scenarios whenever needed.
+            </p>
+            <Link
+              href="/candidate-dashboard/round-1-learning/debugging-drill"
+              className="mt-6 inline-flex items-center justify-center rounded-full bg-sky-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-600"
+            >
+              Start
+            </Link>
           </div>
-          <p className="mt-5 text-sm leading-6 text-slate-600">
-            Practice concept-based buggy code scenarios whenever needed.
-          </p>
-          <button className="mt-6 inline-flex items-center justify-center rounded-full bg-sky-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-600">
-            Start
-          </button>
         </article>
 
-        <article className="rounded-[28px] border border-orange-200 bg-white p-6 shadow-sm shadow-orange-100/60">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-3xl bg-orange-50 text-orange-700">
-              <span className="text-xl">🐞</span>
-            </div>
-            <h2 className="text-xl font-semibold text-slate-950">Final Debugging Drill</h2>
-          </div>
-          <p className="mt-5 text-sm leading-6 text-slate-600">
-            Combined Round 1 debugging assessment with mixed problems.
-          </p>
-          <button className="mt-6 inline-flex items-center justify-center rounded-full bg-orange-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-orange-500">
-            Start
-          </button>
-        </article>
       </section>
     </div>
   );
