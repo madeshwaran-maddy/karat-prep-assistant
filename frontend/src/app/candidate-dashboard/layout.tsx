@@ -15,12 +15,17 @@ export default function CandidateDashboardLayout({ children }: { children: React
   const hideSidebar =
     pathname?.includes("/round-1-learning/concepts") ||
     pathname?.includes("/round-1-learning/practice-questions") ||
-    pathname?.includes("/round-1-learning/debugging-drill");
+    pathname?.includes("/round-1-learning/debugging-drill") ||
+    pathname?.includes("/round-2-learning/format-practice-questions");
 
   const pageTitle = pathname?.includes("/round-1-learning/concepts")
     ? "Round 1 Concepts"
     : pathname?.includes("/round-1-learning/practice-questions")
     ? "Practice Questions"
+    : pathname?.includes("/round-1-learning/debugging-drill")
+    ? "Debugging Drill"
+    : pathname?.includes("/round-2-learning/format-practice-questions")
+    ? "Format Practice Questions"
     : navItems.find((item) => item.href === pathname)?.label ?? "Candidate Dashboard";
 
   const header = (
