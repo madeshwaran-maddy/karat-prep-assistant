@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
-  { label: "Candidate Dashboard", href: "/candidate-dashboard", icon: "🏠" },
+  { label: "Dashboard", href: "/candidate-dashboard", icon: "🏠" },
   { label: "Round 1 Learning", href: "/candidate-dashboard/round-1-learning", icon: "📘" },
   { label: "Round 2 Learning", href: "/candidate-dashboard/round-2-learning", icon: "📗" },
   { label: "Mock Assessment", href: "/candidate-dashboard/mock-assessment", icon: "🗂️" },
@@ -13,12 +13,18 @@ const navItems = [
 export default function CandidateDashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const hideSidebar =
-    pathname?.includes("/round-1-learning/concepts") ||
-    pathname?.includes("/round-1-learning/practice-questions") ||
-    pathname?.includes("/round-1-learning/debugging-drill") ||
-    pathname?.includes("/round-2-learning/format-practice-questions");
+    pathname?.startsWith("/candidate-dashboard/round-1-learning/") ||
+    pathname?.startsWith("/candidate-dashboard/round-2-learning/");
 
-  const pageTitle = pathname?.includes("/round-1-learning/concepts")
+  const pageTitle = pathname === "/candidate-dashboard"
+    ? "Candidate Dashboard"
+    : pathname === "/candidate-dashboard/round-1-learning"
+    ? "Round 1 Learning"
+    : pathname === "/candidate-dashboard/round-2-learning"
+    ? "Round 2 Learning"
+    : pathname === "/candidate-dashboard/mock-assessment"
+    ? "Mock Assessment"
+    : pathname?.includes("/round-1-learning/concepts")
     ? "Round 1 Concepts"
     : pathname?.includes("/round-1-learning/practice-questions")
     ? "Practice Questions"
@@ -26,7 +32,9 @@ export default function CandidateDashboardLayout({ children }: { children: React
     ? "Debugging Drill"
     : pathname?.includes("/round-2-learning/format-practice-questions")
     ? "Format Practice Questions"
-    : navItems.find((item) => item.href === pathname)?.label ?? "Candidate Dashboard";
+    : pathname?.includes("/round-2-learning/exercise-question")
+    ? "Exercise Questions"
+    : "Candidate Dashboard";
 
   const header = (
     <div className="mb-6 rounded-[24px] border border-slate-200 bg-slate-50 p-6 shadow-sm shadow-slate-200/40">
@@ -52,7 +60,7 @@ export default function CandidateDashboardLayout({ children }: { children: React
         <div className="mx-auto min-h-[calc(100vh-3rem)] max-w-7xl overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-sm shadow-slate-200/70">
           <div className="p-6 sm:p-8">
             {header}
-            {children}
+            <div className="mt-6">{children}</div>
           </div>
         </div>
       </div>
@@ -61,12 +69,12 @@ export default function CandidateDashboardLayout({ children }: { children: React
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto w-full max-w-7xl overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-sm shadow-slate-200/70">
+      <div className="mx-auto min-h-[calc(100vh-3rem)] max-w-7xl overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-sm shadow-slate-200/70">
         <div className="p-6 sm:p-8">
           {header}
         </div>
         <div className="flex min-h-[calc(100vh-3rem)] overflow-hidden">
-          <aside className="border-r border-slate-200 bg-slate-50 p-6 sm:p-8 w-full max-w-[300px]">
+          <aside className="w-full max-w-[300px] border-r border-slate-200 bg-slate-50 px-6 py-8 sm:px-8">
             <div className="mb-8">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Candidate Menu</p>
             </div>
@@ -92,7 +100,6 @@ export default function CandidateDashboardLayout({ children }: { children: React
               })}
             </nav>
           </aside>
-
           <main className="flex-1 p-6 sm:p-8">
             {children}
           </main>

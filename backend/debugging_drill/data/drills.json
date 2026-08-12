@@ -15,7 +15,7 @@
                 ],
                 "rules": [
                     "Generate only one bug",
-                    "Return Java code only",
+                    "Return the requested JSON structure containing Java code",
                     "Use Java 17",
                     "Don't reveal the answer"
                 ]
@@ -36,7 +36,7 @@
                 ],
                 "rules": [
                     "Generate only one bug",
-                    "Return Java code only",
+                    "Return the requested JSON structure containing Java code",
                     "Use Java 17",
                     "Don't reveal the answer"
                 ]
@@ -57,7 +57,7 @@
                 ],
                 "rules": [
                     "Generate only one bug",
-                    "Return Java code only",
+                    "Return the requested JSON structure containing Java code",
                     "Use Java 17",
                     "Don't reveal the answer"
                 ]
@@ -80,7 +80,7 @@
                 ],
                 "rules": [
                     "Generate only one bug",
-                    "Return Java code only",
+                    "Return the requested JSON structure containing Java code",
                     "Use Java 17",
                     "Don't reveal the answer"
                 ]
@@ -101,7 +101,7 @@
                 ],
                 "rules": [
                     "Generate only one bug",
-                    "Return Java code only",
+                    "Return the requested JSON structure containing Java code",
                     "Use Java 17",
                     "Don't reveal the answer"
                 ]
@@ -124,7 +124,7 @@
                 ],
                 "rules": [
                     "Generate only one bug",
-                    "Return Java code only",
+                    "Return the requested JSON structure containing Java code",
                     "Use Java 17",
                     "Don't reveal the answer"
                 ]
@@ -145,7 +145,7 @@
                 ],
                 "rules": [
                     "Generate only one bug",
-                    "Return Java code only",
+                    "Return the requested JSON structure containing Java code",
                     "Use Java 17",
                     "Don't reveal the answer"
                 ]
