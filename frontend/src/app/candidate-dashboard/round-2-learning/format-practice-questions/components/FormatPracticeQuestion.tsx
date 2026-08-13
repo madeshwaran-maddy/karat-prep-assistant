@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import styles from "../format-practice-question.module.css";
 import FormatSidebar from "./FormatSidebar";
 import FormatContent from "./FormatContent";
@@ -64,13 +65,16 @@ export default function FormatPracticeQuestion() {
 
   return (
     <main className={styles.fpqPage}>
-      <header className={styles.fpqTopbar}>
-        <div className={styles.fpqBrand}>Karat Preparation Assistant</div>
+      {/* Header removed: brand and profile are redundant with page title */}
 
-        <button className={styles.fpqProfile} type="button">
-          Profile
-        </button>
-      </header>
+      <div style={{ padding: "16px 24px 0" }}>
+        <Link
+          href="/candidate-dashboard/round-2-learning"
+          className="inline-flex rounded-full border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-100"
+        >
+          Back to Round 2 Learning
+        </Link>
+      </div>
 
       <section className={styles.fpqTitlebar}>
         <h1>Format and Practice Questions</h1>
