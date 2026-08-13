@@ -33,15 +33,15 @@ class EvaluationService:
     def evaluate(
         self,
         drill: dict,
-        user_code: str,
+        user_analysis: str,
     ) -> dict:
         """
-        Evaluate the submitted code.
+        Evaluate the submitted analysis.
         """
 
         prompt = self.prompts.build_evaluation_prompt(
             drill=drill,
-            user_code=user_code,
+            user_analysis=user_analysis,
         )
 
         response = self.ollama.evaluate_solution(

@@ -249,6 +249,38 @@ code {
 }
 
 /* ==========================================================
+   ANALYSIS BOX
+========================================================== */
+
+.analysis-box {
+    width: 100%;
+    margin-top: 18px;
+}
+
+.analysis-label {
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #2d3748;
+}
+
+.analysis-textarea {
+    width: 100%;
+    min-height: 110px;
+    border: 1px solid #d1e7d6;
+    background: #f8fff9;
+    padding: 12px 14px;
+    border-radius: 8px;
+    resize: vertical;
+    font-family: Inter, Arial, Helvetica, sans-serif;
+    font-size: 14px;
+    color: #1f2937;
+}
+
+.analysis-textarea:focus {
+    outline: 2px solid #9ae6b4;
+}
+
+/* ==========================================================
    LOADING OVERLAY
 ========================================================== */
 

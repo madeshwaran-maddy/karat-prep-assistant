@@ -21,6 +21,7 @@
 2. Start Ollama:
    - ollama serve
    - If you get an error, make sure Ollama is installed correctly and running on your machine.
+   - http://localhost:11434/ - Check Ollama is properly running.
 
 3. Activate the Python virtual environment:
    - venv\Scripts\activate.bat

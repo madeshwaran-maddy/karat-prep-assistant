@@ -41,7 +41,7 @@ export default function JavaCodeEditor({
 
           body: JSON.stringify({
             sourceCode: code,
-            languageId: 62,
+            languageId: 5,
             stdin: "",
           }),
         }

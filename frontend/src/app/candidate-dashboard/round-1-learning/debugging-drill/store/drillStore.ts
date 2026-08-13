@@ -19,6 +19,9 @@ interface DrillState {
 
   // Editor
   editorCode: string;
+  
+  // Analysis written by candidate (output / bug analysis textbox)
+  analysisText: string;
 
   // Evaluation
   evaluation: EvaluateResponse | null;
@@ -36,6 +39,8 @@ interface DrillState {
   setGeneratedQuestion: (question: GenerateResponse | null) => void;
 
   setEditorCode: (code: string) => void;
+
+  setAnalysisText: (text: string) => void;
 
   setEvaluation: (evaluation: EvaluateResponse | null) => void;
 
@@ -58,6 +63,7 @@ export const useDrillStore = create<DrillState>((set) => ({
   generatedQuestion: null,
 
   editorCode: "",
+  analysisText: "",
 
   evaluation: null,
 
@@ -85,6 +91,11 @@ export const useDrillStore = create<DrillState>((set) => ({
   setEditorCode: (editorCode) =>
     set({
       editorCode,
+    }),
+
+  setAnalysisText: (analysisText) =>
+    set({
+      analysisText,
     }),
 
   setEvaluation: (evaluation) =>
@@ -119,6 +130,8 @@ export const useDrillStore = create<DrillState>((set) => ({
       generatedQuestion: null,
 
       editorCode: "",
+
+      analysisText: "",
 
       evaluation: null,
 

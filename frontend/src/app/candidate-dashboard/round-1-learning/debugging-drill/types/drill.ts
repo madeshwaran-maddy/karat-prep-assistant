@@ -32,7 +32,7 @@ export interface GenerateResponse {
 
 export interface EvaluateRequest {
   id: string;
-  userCode: string;
+  userAnalysis: string;
 }
 
 export interface EvaluateResponse {

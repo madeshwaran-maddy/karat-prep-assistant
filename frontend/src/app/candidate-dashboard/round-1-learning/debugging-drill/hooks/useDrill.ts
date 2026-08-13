@@ -30,6 +30,8 @@ export function useDrill() {
     setSelectedDrill,
     setGeneratedQuestion,
     setEditorCode,
+    setAnalysisText,
+    analysisText,
     setEvaluation,
     setLoading,
     setEvaluating,
@@ -73,6 +75,8 @@ export function useDrill() {
         setLoading(true);
         setGeneratedQuestion(null);
         setEditorCode("");
+        // clear candidate analysis when a new question is generated
+        setAnalysisText("");
 
         const response: GenerateResponse = await generateQuestion({
           id: currentDrill.id,
@@ -93,7 +97,7 @@ export function useDrill() {
         setLoading(false);
       }
     },
-    [selectedDrill, setLoading, setGeneratedQuestion, setEditorCode]
+    [selectedDrill, setLoading, setGeneratedQuestion, setEditorCode, setAnalysisText]
   );
 
   const initializeDrills = useCallback(async () => {
@@ -144,12 +148,17 @@ export function useDrill() {
     setEditorCode(code);
   }, [setEditorCode]);
 
+  const updateAnalysis = useCallback((text: string) => {
+    setAnalysisText(text);
+  }, [setAnalysisText]);
+
   const submitSolution = useCallback(async () => {
     if (!selectedDrill) {
       return;
     }
 
-    if (!editorCode.trim()) {
+    // Evaluate based on candidate analysis text instead of code
+    if (!analysisText || !analysisText.trim()) {
       return;
     }
 
@@ -157,7 +166,7 @@ export function useDrill() {
       setEvaluating(true);
       const response: EvaluateResponse = await evaluateQuestion({
         id: selectedDrill.id,
-        userCode: editorCode,
+        userAnalysis: analysisText,
       });
 
       setEvaluation(response);
@@ -167,7 +176,7 @@ export function useDrill() {
     } finally {
       setEvaluating(false);
     }
-  }, [selectedDrill, editorCode, setEvaluating, setEvaluation, openDrawer]);
+  }, [selectedDrill, analysisText, setEvaluating, setEvaluation, openDrawer]);
 
   const closeResult = useCallback(() => {
     closeDrawer();
@@ -187,6 +196,7 @@ export function useDrill() {
     selectedDrill,
     generatedQuestion,
     editorCode,
+    analysisText,
     evaluation,
     loading,
     evaluating,
@@ -197,6 +207,7 @@ export function useDrill() {
     nextQuestion,
     questionProgress,
     updateCode,
+    updateAnalysis,
     submitSolution,
     closeResult,
     reset,

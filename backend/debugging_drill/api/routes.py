@@ -101,7 +101,7 @@ def evaluate_solution(
 
     result = evaluation_service.evaluate(
         drill=drill,
-        user_code=request.userCode,
+        user_analysis=request.userAnalysis,
     )
 
     return EvaluateResponse(

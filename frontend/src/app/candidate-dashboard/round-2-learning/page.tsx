@@ -47,7 +47,7 @@ export default function RoundTwoLearning() {
             Practice implementation-based exercises and verify your answers.
           </p>
           <Link
-            href="/candidate-dashboard/round-2-learning/practice-questions"
+            href="/candidate-dashboard/round-2-learning/exercise-question"
             className="mt-6 inline-flex items-center justify-center rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
           >
             Start

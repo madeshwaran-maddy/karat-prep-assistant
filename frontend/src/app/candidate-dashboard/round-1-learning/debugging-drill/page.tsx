@@ -24,6 +24,8 @@ export default function DebuggingDrillPage() {
     nextQuestion,
     questionProgress,
     updateCode,
+    updateAnalysis,
+    analysisText,
     submitSolution,
     closeResult,
   } = useDrill();
@@ -64,6 +66,16 @@ export default function DebuggingDrillPage() {
             loading={loading}
             onChange={updateCode}
           />
+
+          <div className="analysis-box mt-4">
+            <div className="analysis-label">Output and Bug Analysis</div>
+            <textarea
+              className="analysis-textarea"
+              placeholder="Describe the output and your bug analysis here..."
+              value={analysisText || ""}
+              onChange={(e) => updateAnalysis(e.target.value)}
+            />
+          </div>
 
           <div className="mt-4 flex flex-col items-end gap-3">
             <SubmitButton

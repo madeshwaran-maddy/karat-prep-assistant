@@ -18,19 +18,19 @@ Generation Rules
 
 {rules}
 
-Candidate Code
+Candidate Analysis
 
-{user_code}
+{user_analysis}
 
 Evaluation Rules
 
-1. Determine whether the bug has been fixed correctly.
+1. Determine whether the candidate's analysis correctly identifies the bug(s) in the original question and whether the proposed approach would fix them.
 
 2. Ignore formatting differences.
 
 3. Ignore import ordering.
 
-4. Focus only on correctness.
+4. Focus only on correctness of the analysis relative to the question and rules.
 
 5. Give a score from 0 to 10.
 
@@ -51,7 +51,7 @@ Incorrect understanding.
 0
 No meaningful attempt.
 
-Return ONLY valid JSON.
+Return ONLY valid JSON. The JSON should reflect how well the candidate's analysis addresses the bug(s) and whether the suggested approach is correct.
 
 Do NOT use markdown.
 

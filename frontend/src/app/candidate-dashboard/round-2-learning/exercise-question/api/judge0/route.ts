@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 const JUDGE0_URL =
   process.env.JUDGE0_URL ||
-  "https://ce.judge0.com";
+  "https://extra-ce.judge0.com";
 
 export async function POST(
   request: NextRequest
@@ -13,7 +13,7 @@ export async function POST(
 
     const {
       sourceCode,
-      languageId = 62,
+      languageId = 5,
       stdin = "",
     } = body;
 

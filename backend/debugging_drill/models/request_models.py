@@ -22,8 +22,9 @@ class EvaluateRequest(BaseModel):
         description="Unique drill id"
     )
 
-    userCode: str = Field(
+    # The candidate's analysis / explanation of the bug and approach
+    userAnalysis: str = Field(
         ...,
         min_length=1,
-        description="User edited Java source code"
+        description="User-provided analysis / explanation text"
     )

@@ -96,7 +96,7 @@ class PromptService:
     def build_evaluation_prompt(
         self,
         drill: dict[str, Any],
-        user_code: str,
+        user_analysis: str,
     ) -> str:
 
         template = self._read_template(
@@ -119,5 +119,5 @@ class PromptService:
 
             difficulty=drill["difficulty"],
 
-            user_code=user_code,
+            user_analysis=user_analysis,
         )
