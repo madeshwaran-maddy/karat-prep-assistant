@@ -7,14 +7,16 @@ const navItems = [
   { label: "Dashboard", href: "/candidate-dashboard", icon: "🏠" },
   { label: "Round 1 Learning", href: "/candidate-dashboard/round-1-learning", icon: "📘" },
   { label: "Round 2 Learning", href: "/candidate-dashboard/round-2-learning", icon: "📗" },
-  { label: "Mock Assessment", href: "/candidate-dashboard/mock-assessment", icon: "🗂️" },
+  { label: "Mock Assessment", href: "/candidate-dashboard/mock-assesment", icon: "🗂️" },
 ];
 
 export default function CandidateDashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const hideSidebar =
     pathname?.startsWith("/candidate-dashboard/round-1-learning/") ||
-    pathname?.startsWith("/candidate-dashboard/round-2-learning/");
+    pathname?.startsWith("/candidate-dashboard/round-2-learning/") ||
+    pathname?.startsWith("/candidate-dashboard/mock-assesment") ||
+    pathname?.startsWith("/candidate-dashboard/mock-assessment");
 
   const pageTitle = pathname === "/candidate-dashboard"
     ? "Candidate Dashboard"
@@ -22,7 +24,7 @@ export default function CandidateDashboardLayout({ children }: { children: React
     ? "Round 1 Learning"
     : pathname === "/candidate-dashboard/round-2-learning"
     ? "Round 2 Learning"
-    : pathname === "/candidate-dashboard/mock-assessment"
+    : pathname === "/candidate-dashboard/mock-assessment" || pathname === "/candidate-dashboard/mock-assesment"
     ? "Mock Assessment"
     : pathname?.includes("/round-1-learning/concepts")
     ? "Round 1 Concepts"
@@ -47,9 +49,17 @@ export default function CandidateDashboardLayout({ children }: { children: React
             {pageTitle}
           </p>
         </div>
-        <button className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-100">
-          Profile
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-100"
+          >
+            Go to Main Dashboard
+          </Link>
+          <button className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-100">
+            Profile
+          </button>
+        </div>
       </div>
     </div>
   );

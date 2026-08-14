@@ -88,6 +88,12 @@ export default function ResultDrawer({
 
             <div className="section">
 
+              <h3>Buggy Code</h3>
+
+              <pre className="buggy-code">
+                <code>{result.buggyCode}</code>
+              </pre>
+
               <h3>Corrected Code</h3>
 
               <pre className="corrected-code">

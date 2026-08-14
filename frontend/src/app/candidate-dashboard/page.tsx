@@ -61,7 +61,7 @@ export default function CandidateDashboard() {
             </div>
             <div className="mt-6">
               <Link
-                href="/candidate-dashboard/mock-assessment"
+                href="/candidate-dashboard/mock-assesment"
                 className="inline-flex rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
               >
                 Start Assessment

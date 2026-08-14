@@ -60,6 +60,11 @@ class EvaluateResponse(BaseModel):
         description="Corrected Java code"
     )
 
+    buggyCode: str = Field(
+        default="",
+        description="Original buggy Java code"
+    )
+
 class EvaluationResult(BaseModel):
 
     score: int
@@ -71,6 +76,8 @@ class EvaluationResult(BaseModel):
     suggestions: list[str]
 
     correctedCode: str
+
+    buggyCode: str | None = None
 
     @field_validator("score")
     @classmethod

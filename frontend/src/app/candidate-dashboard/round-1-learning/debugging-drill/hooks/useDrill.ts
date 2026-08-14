@@ -167,6 +167,7 @@ export function useDrill() {
       const response: EvaluateResponse = await evaluateQuestion({
         id: selectedDrill.id,
         userAnalysis: analysisText,
+        originalCode: editorCode,
       });
 
       setEvaluation(response);

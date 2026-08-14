@@ -28,3 +28,9 @@ class EvaluateRequest(BaseModel):
         min_length=1,
         description="User-provided analysis / explanation text"
     )
+
+    # The original buggy Java code shown to the candidate (optional)
+    originalCode: str | None = Field(
+        default=None,
+        description="Original generated buggy Java code"
+    )

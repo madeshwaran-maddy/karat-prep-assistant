@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from debugging_drill.api.routes import router as debugging_router
 from debugging_drill.services.ollama_service import OllamaService
+from mock_assessment.api.routes import router as mock_assessment_router
 
 
 # ---------------------------------------------------------
@@ -120,4 +121,7 @@ def ping():
 
 app.include_router(
     debugging_router
+)
+app.include_router(
+    mock_assessment_router
 )

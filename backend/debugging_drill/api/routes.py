@@ -102,6 +102,7 @@ def evaluate_solution(
     result = evaluation_service.evaluate(
         drill=drill,
         user_analysis=request.userAnalysis,
+        original_code=request.originalCode,
     )
 
     return EvaluateResponse(
@@ -110,4 +111,5 @@ def evaluate_solution(
         explanation=result["explanation"],
         suggestions=result["suggestions"],
         correctedCode=result["correctedCode"],
+        buggyCode=result.get("buggyCode", ""),
     )

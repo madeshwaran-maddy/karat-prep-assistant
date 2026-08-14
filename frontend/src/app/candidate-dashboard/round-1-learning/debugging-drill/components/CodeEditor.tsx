@@ -61,7 +61,7 @@ export default function CodeEditor({
   };
 
   return (
-    <div className="code-editor-wrapper">
+    <div className="code-editor-wrapper" style={{ height: 650 }}>
 
       <div className="editor-toolbar">
 
@@ -77,7 +77,7 @@ export default function CodeEditor({
 
       </div>
 
-      <div className="editor-container">
+      <div className="code-editor-surface" style={{ height: 590 }}>
 
         <Editor
           height="100%"

@@ -34,6 +34,7 @@ class EvaluationService:
         self,
         drill: dict,
         user_analysis: str,
+        original_code: str | None = None,
     ) -> dict:
         """
         Evaluate the submitted analysis.
@@ -42,14 +43,69 @@ class EvaluationService:
         prompt = self.prompts.build_evaluation_prompt(
             drill=drill,
             user_analysis=user_analysis,
+            original_code=original_code,
         )
 
-        response = self.ollama.evaluate_solution(
-            prompt
-        )
+        response = self.ollama.evaluate_solution(prompt)
 
-        validated = EvaluationResult.model_validate(
-            response
-        )
+        # Try to validate the LLM response against our schema. If validation
+        # fails because fields are missing or malformed, fall back to a
+        # best-effort construction so the frontend still receives the
+        # important fields (score, correct, explanation, suggestions,
+        # correctedCode) and the buggy code when available.
+        try:
+            validated = EvaluationResult.model_validate(response)
+            result = validated.model_dump()
+        except Exception:
+            # Best-effort defaults and extraction
+            score = int(response.get("score", 0)) if isinstance(response, dict) else 0
+            if score < 0:
+                score = 0
+            if score > 10:
+                score = 10
 
-        return validated.model_dump()
+            correct = bool(response.get("correct", False)) if isinstance(response, dict) else False
+            explanation = str(response.get("explanation", "")) if isinstance(response, dict) else ""
+            suggestions = response.get("suggestions", []) if isinstance(response, dict) else []
+            if not isinstance(suggestions, list):
+                suggestions = [str(suggestions)]
+            corrected = str(response.get("correctedCode", "")) if isinstance(response, dict) else ""
+
+            result = {
+                "score": score,
+                "correct": correct,
+                "explanation": explanation,
+                "suggestions": suggestions,
+                "correctedCode": corrected,
+            }
+
+        # Ensure buggyCode is present: prefer the original code provided by
+        # the frontend, otherwise accept any buggyCode returned by the model.
+        if original_code:
+            result["buggyCode"] = original_code
+        else:
+            # If the model provided a buggyCode field, keep it; otherwise
+            # default to empty string.
+            result["buggyCode"] = response.get("buggyCode", "") if isinstance(response, dict) else ""
+
+        # If correctedCode is empty, attempt a focused follow-up request to
+        # produce a corrected Java source. This helps when the evaluator
+        # returned analysis but omitted the corrected code.
+        corrected = result.get("correctedCode", "")
+        if (not corrected or not str(corrected).strip()) and original_code:
+            try:
+                followup_prompt = (
+                    "You are an expert Java developer. Fix the following Java program so it compiles and addresses the bug(s) described. "
+                    "Return ONLY the complete corrected Java source code file, with no comments and no explanation."
+                    "\n\nOriginal Code:\n" + original_code + "\n\n"
+                    "Candidate Analysis:\n" + (user_analysis or "")
+                )
+
+                fixed = self.ollama.generate_code(followup_prompt)
+                if fixed and fixed.strip():
+                    result["correctedCode"] = fixed
+            except Exception:
+                # Swallow errors from follow-up generation; keep existing value.
+                pass
+
+        return result

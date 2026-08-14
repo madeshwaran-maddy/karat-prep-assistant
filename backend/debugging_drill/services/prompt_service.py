@@ -97,6 +97,7 @@ class PromptService:
         self,
         drill: dict[str, Any],
         user_analysis: str,
+        original_code: str | None = None,
     ) -> str:
 
         template = self._read_template(
@@ -120,4 +121,6 @@ class PromptService:
             difficulty=drill["difficulty"],
 
             user_analysis=user_analysis,
+
+            original_code=original_code or "",
         )

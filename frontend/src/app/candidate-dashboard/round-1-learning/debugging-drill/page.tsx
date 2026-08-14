@@ -59,7 +59,7 @@ export default function DebuggingDrillPage() {
 
         </aside>
 
-        <main className="editor-container">
+        <main className="debug-editor-panel">
 
           <CodeEditor
             code={editorCode}

@@ -33,6 +33,7 @@ export interface GenerateResponse {
 export interface EvaluateRequest {
   id: string;
   userAnalysis: string;
+  originalCode?: string;
 }
 
 export interface EvaluateResponse {
@@ -41,4 +42,5 @@ export interface EvaluateResponse {
   explanation: string;
   suggestions: string[];
   correctedCode: string;
+  buggyCode?: string;
 }

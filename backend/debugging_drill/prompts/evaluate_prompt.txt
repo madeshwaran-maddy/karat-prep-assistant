@@ -22,6 +22,10 @@ Candidate Analysis
 
 {user_analysis}
 
+Original Code
+
+{original_code}
+
 Evaluation Rules
 
 1. Determine whether the candidate's analysis correctly identifies the bug(s) in the original question and whether the proposed approach would fix them.
@@ -34,6 +38,14 @@ Evaluation Rules
 
 5. Give a score from 0 to 10.
 
+6. Return correct code in the response.
+
+7. When judging the candidate analysis, use the provided `Original Code` to identify the exact bug(s). State the primary bug in one short sentence at the start of the `explanation` 
+
+8. If the candidate analysis is incorrect or incomplete, the `explanation` must clearly state what is wrong and why, referencing specific code elements (variable names, types, or line fragments) when possible.
+
+9. Provide at least two concrete, actionable items in `suggestions` when the analysis is incorrect or partially correct. Each suggestion must explain what to change and why .
+
 Scoring
 
 10
@@ -45,13 +57,11 @@ Correct solution with very minor issues.
 5-7
 Partially fixed.
 
-1-4
+0-4
 Incorrect understanding.
 
-0
-No meaningful attempt.
 
-Return ONLY valid JSON. The JSON should reflect how well the candidate's analysis addresses the bug(s) and whether the suggested approach is correct.
+Return ONLY valid JSON. The JSON must reflect how well the candidate's analysis addresses the bug(s) and whether the suggested approach is correct. The `explanation` should begin with a one-line primary bug summary and then a brief rationale. The `suggestions` array must contain actionable steps (2+ items) when the analysis is not fully correct.
 
 Do NOT use markdown.
 
@@ -62,9 +72,10 @@ Return exactly:
 {{
   "score": 0,
   "correct": false,
-  "explanation": "",
+  "explanation": "Detailed explanation of whether the analysis is correct and why.",
   "suggestions": [
-    ""
+    "One or more specific suggestions to improve the candidate's analysis or approach."
   ],
+  "buggyCode": "", 
   "correctedCode": ""
 }}

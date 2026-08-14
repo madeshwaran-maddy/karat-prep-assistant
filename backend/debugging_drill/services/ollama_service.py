@@ -262,7 +262,92 @@ class OllamaService:
             missing = "".join(pairs[item] for item in reversed(stack))
             candidate = f"{candidate}\n{missing}"
 
+        # Ensure no Java comment tokens remain in the returned code.
+        candidate = OllamaService._remove_comments(candidate)
+
         return candidate
+
+    @staticmethod
+    def _remove_comments(code: str) -> str:
+        """Remove Java // and /* */ comments while preserving string/char literals.
+
+        This implements a simple state machine to avoid stripping comment-like
+        sequences inside string or character literals.
+        """
+        out: list[str] = []
+        i = 0
+        n = len(code)
+        in_string = False
+        in_char = False
+        in_single_comment = False
+        in_multi_comment = False
+        escape = False
+
+        while i < n:
+            ch = code[i]
+
+            # End of single-line comment
+            if in_single_comment:
+                if ch == "\n":
+                    in_single_comment = False
+                    out.append(ch)
+                i += 1
+                continue
+
+            # End of multi-line comment
+            if in_multi_comment:
+                if ch == "*" and i + 1 < n and code[i + 1] == "/":
+                    in_multi_comment = False
+                    i += 2
+                else:
+                    i += 1
+                continue
+
+            # Handle string/char escapes
+            if in_string or in_char:
+                out.append(ch)
+                if not escape and ch == "\\":
+                    escape = True
+                else:
+                    if escape:
+                        escape = False
+                    else:
+                        if in_string and ch == '"':
+                            in_string = False
+                        elif in_char and ch == "'":
+                            in_char = False
+                i += 1
+                continue
+
+            # Recognize comment starts
+            if ch == "/" and i + 1 < n:
+                nxt = code[i + 1]
+                if nxt == "/":
+                    in_single_comment = True
+                    i += 2
+                    continue
+                if nxt == "*":
+                    in_multi_comment = True
+                    i += 2
+                    continue
+
+            # Recognize string/char start
+            if ch == '"':
+                in_string = True
+                out.append(ch)
+                i += 1
+                continue
+
+            if ch == "'":
+                in_char = True
+                out.append(ch)
+                i += 1
+                continue
+
+            out.append(ch)
+            i += 1
+
+        return "".join(out)
 
     # ---------------------------------------------------------
 
