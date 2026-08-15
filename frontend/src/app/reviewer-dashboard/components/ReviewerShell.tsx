@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ReactNode } from "react";
+import { AppHeader } from "@/components/AppHeader";
 import styles from "../reviewer-dashboard.module.css";
 
 type Active = "dashboard" | "report" | "candidate";
@@ -22,17 +23,9 @@ export function ReviewerShell({
         <span className={styles.browserTitle}>Reviewer Dashboard</span>
       </div>
 
-      <header className={styles.topbar}>
-        <Link href="../" className={styles.brand}>
-          Karat Preparation Assistant
-        </Link>
-
-        <div className={styles.topActions}>
-          <Link href="/" className={styles.logoutButton}>Go to Main Dashboard</Link>
-          <span className={styles.roleButton}>Reviewer</span>
-          <Link href="/" className={styles.logoutButton}>Logout</Link>
-        </div>
-      </header>
+      <div className="px-6 pt-6">
+        <AppHeader pageTitle={active === "dashboard" ? "Dashboard" : active === "report" ? "Candidate Report" : "Candidate Information"} />
+      </div>
 
       <div className={styles.workspace}>
         <aside className={styles.sidebar}>

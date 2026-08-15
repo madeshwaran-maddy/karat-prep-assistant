@@ -1,6 +1,36 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function RoundOneLearning() {
+  const router = useRouter();
+
+  const handleDebuggingDrillStart = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/assessments/start-debugging-drill", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Unable to start debugging drill.");
+      }
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("debuggingAssessmentId", data.assessmentId);
+        localStorage.setItem("debuggingAttemptNo", String(data.attemptNo));
+      }
+
+      router.push("/candidate-dashboard/round-1-learning/debugging-drill");
+    } catch (error) {
+      console.error("Failed to start debugging drill:", error);
+      router.push("/candidate-dashboard/round-1-learning/debugging-drill");
+    }
+  };
+
   return (
     <div>
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -71,12 +101,12 @@ export default function RoundOneLearning() {
             <p className="mt-5 text-sm leading-6 text-slate-600">
               Practice concept-based buggy code scenarios whenever needed.
             </p>
-            <Link
-              href="/candidate-dashboard/round-1-learning/debugging-drill"
+            <button
+              onClick={handleDebuggingDrillStart}
               className="mt-6 inline-flex items-center justify-center rounded-full bg-sky-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-600"
             >
               Start
-            </Link>
+            </button>
           </div>
         </article>
 

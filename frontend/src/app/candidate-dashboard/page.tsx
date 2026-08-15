@@ -11,6 +11,15 @@ export default function CandidateDashboard() {
           </div>
         </div>
 
+        <div className="mb-6 flex justify-start">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-100"
+          >
+            Go to Main Dashboard
+          </Link>
+        </div>
+
         <div className="grid gap-6 xl:grid-cols-[1.2fr_1.2fr] xl:grid-rows-[auto_auto]">
           <article className="rounded-[28px] border border-emerald-200 bg-emerald-50/60 p-6 shadow-sm shadow-emerald-100/70">
             <div className="flex items-center justify-between gap-4">

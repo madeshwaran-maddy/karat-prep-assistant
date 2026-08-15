@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AppHeader } from "@/components/AppHeader";
 
 const navItems = [
   { label: "Dashboard", href: "/candidate-dashboard", icon: "🏠" },
@@ -38,31 +39,7 @@ export default function CandidateDashboardLayout({ children }: { children: React
     ? "Exercise Questions"
     : "Candidate Dashboard";
 
-  const header = (
-    <div className="mb-6 rounded-[24px] border border-slate-200 bg-slate-50 p-6 shadow-sm shadow-slate-200/40">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl">
-            Karat Preparation Assistant
-          </h1>
-          <p className="mt-3 text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">
-            {pageTitle}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-100"
-          >
-            Go to Main Dashboard
-          </Link>
-          <button className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-100">
-            Profile
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  const header = <AppHeader pageTitle={pageTitle} />;
 
   if (hideSidebar) {
     return (
