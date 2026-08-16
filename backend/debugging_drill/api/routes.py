@@ -1,3 +1,4 @@
+import json
 import os
 import uuid
 
@@ -70,11 +71,37 @@ def ensure_question_table():
             )
         )
 
+        for column_sql in [
+            "ALTER TABLE questions ADD COLUMN IF NOT EXISTS candidate_id UUID",
+            "ALTER TABLE questions ADD COLUMN IF NOT EXISTS subtopic VARCHAR(255)",
+            "ALTER TABLE questions ADD COLUMN IF NOT EXISTS description TEXT",
+            "ALTER TABLE questions ADD COLUMN IF NOT EXISTS source VARCHAR(50)",
+            "ALTER TABLE questions ADD COLUMN IF NOT EXISTS difficulty VARCHAR(50)",
+            "ALTER TABLE questions ADD COLUMN IF NOT EXISTS code TEXT",
+        ]:
+            connection.execute(text(column_sql))
+
+
+def ensure_evaluation_table():
+    with engine.begin() as connection:
         connection.execute(
             text(
                 """
-                ALTER TABLE questions
-                ADD COLUMN IF NOT EXISTS candidate_id UUID
+                CREATE TABLE IF NOT EXISTS evaluations (
+                    id UUID PRIMARY KEY,
+                    assessment_id UUID NOT NULL REFERENCES assessments(id),
+                    candidate_id UUID NOT NULL REFERENCES candidates(id),
+                    question_id UUID NOT NULL REFERENCES questions(id),
+                    user_code TEXT,
+                    user_analysis TEXT,
+                    score INTEGER,
+                    correct BOOLEAN,
+                    explanation TEXT,
+                    suggestions TEXT,
+                    corrected_code TEXT,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
                 """
             )
         )
@@ -82,8 +109,20 @@ def ensure_question_table():
         connection.execute(
             text(
                 """
-                ALTER TABLE questions
-                ADD COLUMN IF NOT EXISTS subtopic VARCHAR(255)
+                DO $$
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_name = 'evaluations'
+                          AND column_name = 'suggestions'
+                          AND data_type = 'ARRAY'
+                    ) THEN
+                        ALTER TABLE evaluations
+                        ALTER COLUMN suggestions TYPE TEXT
+                        USING array_to_string(suggestions, ',');
+                    END IF;
+                END $$;
                 """
             )
         )
@@ -91,8 +130,10 @@ def ensure_question_table():
         connection.execute(
             text(
                 """
-                ALTER TABLE questions
-                ADD COLUMN IF NOT EXISTS description TEXT
+                DELETE FROM evaluations a
+                USING evaluations b
+                WHERE a.id > b.id
+                  AND a.question_id = b.question_id
                 """
             )
         )
@@ -100,29 +141,22 @@ def ensure_question_table():
         connection.execute(
             text(
                 """
-                ALTER TABLE questions
-                ADD COLUMN IF NOT EXISTS source VARCHAR(50)
+                CREATE UNIQUE INDEX IF NOT EXISTS uq_evaluations_question_id
+                ON evaluations (question_id)
                 """
             )
         )
 
-        connection.execute(
-            text(
-                """
-                ALTER TABLE questions
-                ADD COLUMN IF NOT EXISTS difficulty VARCHAR(50)
-                """
-            )
-        )
-
-        connection.execute(
-            text(
-                """
-                ALTER TABLE questions
-                ADD COLUMN IF NOT EXISTS code TEXT
-                """
-            )
-        )
+        for column_sql in [
+            "ALTER TABLE evaluations ADD COLUMN IF NOT EXISTS user_code TEXT",
+            "ALTER TABLE evaluations ADD COLUMN IF NOT EXISTS user_analysis TEXT",
+            "ALTER TABLE evaluations ADD COLUMN IF NOT EXISTS score INTEGER",
+            "ALTER TABLE evaluations ADD COLUMN IF NOT EXISTS correct BOOLEAN",
+            "ALTER TABLE evaluations ADD COLUMN IF NOT EXISTS explanation TEXT",
+            "ALTER TABLE evaluations ADD COLUMN IF NOT EXISTS suggestions TEXT",
+            "ALTER TABLE evaluations ADD COLUMN IF NOT EXISTS corrected_code TEXT",
+        ]:
+            connection.execute(text(column_sql))
 
 
 @router.get("/collections")
@@ -265,6 +299,7 @@ def generate_question(
         )
 
     return GenerateResponse(
+        id=question_id,
         topic=topic,
         difficulty=difficulty,
         code=generated_code,
@@ -277,10 +312,65 @@ def generate_question(
 )
 def evaluate_solution(
     request: EvaluateRequest,
+    http_request: Request,
 ):
     """
-    Evaluate candidate solution.
+    Evaluate candidate solution and persist the result to the evaluations table.
     """
+    ensure_question_table()
+    ensure_evaluation_table()
+
+    candidate_token = (http_request.cookies.get("auth_token") or "").strip()
+    if not candidate_token.startswith("candidate-"):
+        raise HTTPException(status_code=401, detail="Candidate not logged in.")
+
+    candidate_id = candidate_token.replace("candidate-", "", 1)
+
+    with engine.begin() as connection:
+        candidate = connection.execute(
+            text("SELECT id FROM candidates WHERE id::text = :candidate_id"),
+            {"candidate_id": candidate_id},
+        ).fetchone()
+
+        if not candidate:
+            raise HTTPException(status_code=404, detail="Candidate not found.")
+
+        assessment_id = request.assessmentId
+        if not assessment_id:
+            assessment_id = connection.execute(
+                text(
+                    """
+                    SELECT id
+                    FROM assessments
+                    WHERE candidate_id = :candidate_id
+                      AND status = 'in_progress'
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                    """
+                ),
+                {"candidate_id": candidate[0]},
+            ).scalar()
+
+        if not assessment_id:
+            raise HTTPException(status_code=404, detail="No active assessment found for this candidate.")
+
+        question_id = request.questionId
+        if not question_id:
+            question_id = connection.execute(
+                text(
+                    """
+                    SELECT id
+                    FROM questions
+                    WHERE assessment_id = :assessment_id
+                    ORDER BY question_no DESC, created_at DESC
+                    LIMIT 1
+                    """
+                ),
+                {"assessment_id": assessment_id},
+            ).scalar()
+
+        if not question_id:
+            raise HTTPException(status_code=404, detail="No question exists for this assessment.")
 
     drill = json_service.get_drill(
         request.id
@@ -297,6 +387,70 @@ def evaluate_solution(
         user_analysis=request.userAnalysis,
         original_code=request.originalCode,
     )
+
+    suggestion_text = json.dumps(result.get("suggestions", []))
+    evaluation_id = str(uuid.uuid4())
+
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                """
+                INSERT INTO evaluations (
+                    id,
+                    assessment_id,
+                    candidate_id,
+                    question_id,
+                    user_code,
+                    user_analysis,
+                    score,
+                    correct,
+                    explanation,
+                    suggestions,
+                    corrected_code,
+                    created_at,
+                    updated_at
+                ) VALUES (
+                    :id,
+                    :assessment_id,
+                    :candidate_id,
+                    :question_id,
+                    :user_code,
+                    :user_analysis,
+                    :score,
+                    :correct,
+                    :explanation,
+                    :suggestions,
+                    :corrected_code,
+                    NOW(),
+                    NOW()
+                )
+                ON CONFLICT (question_id) DO UPDATE SET
+                    assessment_id = EXCLUDED.assessment_id,
+                    candidate_id = EXCLUDED.candidate_id,
+                    user_code = EXCLUDED.user_code,
+                    user_analysis = EXCLUDED.user_analysis,
+                    score = EXCLUDED.score,
+                    correct = EXCLUDED.correct,
+                    explanation = EXCLUDED.explanation,
+                    suggestions = EXCLUDED.suggestions,
+                    corrected_code = EXCLUDED.corrected_code,
+                    updated_at = NOW()
+                """
+            ),
+            {
+                "id": evaluation_id,
+                "assessment_id": assessment_id,
+                "candidate_id": candidate[0],
+                "question_id": question_id,
+                "user_code": request.userCode or request.originalCode or "",
+                "user_analysis": request.userAnalysis,
+                "score": int(result["score"]),
+                "correct": bool(result["correct"]),
+                "explanation": result["explanation"],
+                "suggestions": suggestion_text,
+                "corrected_code": result.get("correctedCode", ""),
+            },
+        )
 
     return EvaluateResponse(
         score=result["score"],

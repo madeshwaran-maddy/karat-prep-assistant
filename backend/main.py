@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 import os
 import uuid
+from datetime import datetime
 
 import bcrypt
 from dotenv import load_dotenv
@@ -13,6 +14,7 @@ from sqlalchemy.orm import sessionmaker
 from debugging_drill.api.routes import router as debugging_router
 from debugging_drill.services.ollama_service import OllamaService
 from mock_assessment.api.routes import router as mock_assessment_router
+from mock_assessment.services.excel_service import get_random_exercise_question
 
 load_dotenv()
 
@@ -39,6 +41,9 @@ def ensure_schema():
                     status VARCHAR(50),
                     role VARCHAR(50),
                     lead_name VARCHAR(255),
+                    start_date DATE,
+                    karat_prep_timeline VARCHAR(255),
+                    karat_assessment_date DATE,
                     created_at TIMESTAMP DEFAULT NOW(),
                     updated_at TIMESTAMP DEFAULT NOW()
                 )
@@ -58,6 +63,33 @@ def ensure_schema():
         connection.execute(
             text(
                 """
+                ALTER TABLE candidates
+                ADD COLUMN IF NOT EXISTS start_date DATE
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                ALTER TABLE candidates
+                ADD COLUMN IF NOT EXISTS karat_prep_timeline VARCHAR(255)
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                ALTER TABLE candidates
+                ADD COLUMN IF NOT EXISTS karat_assessment_date DATE
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
                 CREATE TABLE IF NOT EXISTS assessments (
                     id UUID PRIMARY KEY,
                     candidate_id UUID NOT NULL REFERENCES candidates(id),
@@ -68,6 +100,58 @@ def ensure_schema():
                     completed_at TIMESTAMP NULL,
                     updated_at TIMESTAMP DEFAULT NOW()
                 )
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS questions (
+                    id UUID PRIMARY KEY,
+                    assessment_id UUID NOT NULL REFERENCES assessments(id),
+                    candidate_id UUID NOT NULL REFERENCES candidates(id),
+                    question_no INTEGER NOT NULL,
+                    topic VARCHAR(255),
+                    subtopic VARCHAR(255),
+                    difficulty VARCHAR(50) DEFAULT 'medium',
+                    description TEXT DEFAULT '',
+                    code TEXT,
+                    source VARCHAR(50) DEFAULT 'excel',
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS evaluations (
+                    id UUID PRIMARY KEY,
+                    assessment_id UUID NOT NULL REFERENCES assessments(id),
+                    candidate_id UUID NOT NULL REFERENCES candidates(id),
+                    question_id UUID NOT NULL REFERENCES questions(id),
+                    user_code TEXT,
+                    user_analysis TEXT,
+                    score INTEGER,
+                    correct BOOLEAN,
+                    explanation TEXT,
+                    suggestions TEXT,
+                    corrected_code TEXT,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS uq_evaluations_question_id
+                ON evaluations (question_id)
                 """
             )
         )
@@ -167,6 +251,47 @@ class CandidateLoginRequest(BaseModel):
     password: str = Field(..., min_length=4)
 
 
+class CandidateUpdateRequest(BaseModel):
+    name: str = Field(..., min_length=2)
+    email: str = Field(..., min_length=3)
+    phone: str | None = None
+    lead_name: str | None = None
+    status: str | None = None
+    role: str | None = None
+    start_date: str | None = None
+    karat_prep_timeline: str | None = None
+    karat_assessment_date: str | None = None
+
+
+class ExerciseQuestionSubmitRequest(BaseModel):
+    assessmentId: str = Field(..., min_length=1)
+    questionId: str = Field(..., min_length=1)
+    userCode: str = Field(default="")
+    userAnalysis: str = Field(default="")
+
+
+def format_date_value(value):
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        value = value.split("T")[0]
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).strftime("%Y-%m-%d")
+    except ValueError:
+        return str(value)
+
+
+def format_display_date(value):
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        value = value.split("T")[0]
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).strftime("%d-%b-%y")
+    except ValueError:
+        return str(value)
+
+
 # ---------------------------------------------------------
 # Health
 # ---------------------------------------------------------
@@ -203,6 +328,235 @@ def db_health():
         return {"status": "ok", "database": "connected"}
     except Exception as exc:
         raise HTTPException(status_code=503, detail=f"Database unavailable: {str(exc)}") from exc
+
+
+@app.get("/api/reviewer/candidates")
+def get_reviewer_candidates():
+    with engine.connect() as connection:
+        rows = connection.execute(
+            text(
+                """
+                SELECT
+                    c.id,
+                    c.name,
+                    c.email,
+                    c.phone,
+                    c.created_at,
+                    c.start_date,
+                    c.karat_prep_timeline,
+                    c.karat_assessment_date,
+                    c.role,
+                    c.lead_name,
+                    c.status,
+                    COALESCE(SUM(CASE WHEN a.round = 1 THEN 1 ELSE 0 END), 0) AS round1_attempts,
+                    COALESCE(SUM(CASE WHEN a.round = 2 THEN 1 ELSE 0 END), 0) AS round2_attempts,
+                    COALESCE(SUM(CASE WHEN a.round = 3 THEN 1 ELSE 0 END), 0) AS mock_attempts
+                FROM candidates c
+                LEFT JOIN assessments a ON a.candidate_id = c.id
+                GROUP BY c.id, c.name, c.email, c.phone, c.created_at, c.start_date, c.karat_prep_timeline, c.karat_assessment_date, c.role, c.lead_name, c.status
+                ORDER BY c.created_at DESC
+                """
+            )
+        ).mappings().all()
+
+    payload = []
+    for row in rows:
+        start_date_value = row["start_date"] or row["created_at"]
+        payload.append(
+            {
+                "id": str(row["id"]),
+                "name": row["name"],
+                "email": row["email"],
+                "phone": row["phone"],
+                "startDate": format_date_value(start_date_value),
+                "karatAssessmentDate": format_date_value(row["karat_assessment_date"]),
+                "timeline": row["karat_prep_timeline"] or "",
+                "leadName": row["lead_name"] or "",
+                "status": row["status"] or "",
+                "role": row["role"] or "candidate",
+                "round1Attempts": int(row["round1_attempts"] or 0),
+                "round2Attempts": int(row["round2_attempts"] or 0),
+                "totalMockAttempts": int(row["mock_attempts"] or 0),
+                "attempts": [],
+            }
+        )
+
+    return payload
+
+
+@app.get("/api/reviewer/candidates/{candidate_id}")
+def get_reviewer_candidate(candidate_id: str):
+    with engine.connect() as connection:
+        candidate_row = connection.execute(
+            text(
+                """
+                SELECT
+                    c.id,
+                    c.name,
+                    c.email,
+                    c.phone,
+                    c.created_at,
+                    c.start_date,
+                    c.karat_prep_timeline,
+                    c.karat_assessment_date,
+                    c.role,
+                    c.lead_name,
+                    c.status,
+                    COALESCE(SUM(CASE WHEN a.round = 1 THEN 1 ELSE 0 END), 0) AS round1_attempts,
+                    COALESCE(SUM(CASE WHEN a.round = 2 THEN 1 ELSE 0 END), 0) AS round2_attempts,
+                    COALESCE(SUM(CASE WHEN a.round = 3 THEN 1 ELSE 0 END), 0) AS mock_attempts
+                FROM candidates c
+                LEFT JOIN assessments a ON a.candidate_id = c.id
+                WHERE c.id::text = :candidate_id
+                GROUP BY c.id, c.name, c.email, c.phone, c.created_at, c.start_date, c.karat_prep_timeline, c.karat_assessment_date, c.role, c.lead_name, c.status
+                """
+            ),
+            {"candidate_id": candidate_id},
+        ).mappings().first()
+
+        if candidate_row is None:
+            raise HTTPException(status_code=404, detail="Candidate not found.")
+
+        attempt_rows = connection.execute(
+            text(
+                """
+                SELECT
+                    a.id,
+                    a.round,
+                    a.attempt_no,
+                    a.created_at,
+                    q.topic,
+                    q.code
+                FROM assessments a
+                LEFT JOIN questions q ON q.assessment_id = a.id AND q.question_no = 1
+                WHERE a.candidate_id::text = :candidate_id
+                ORDER BY a.created_at ASC
+                """
+            ),
+            {"candidate_id": candidate_id},
+        ).mappings().all()
+
+    attempts = []
+    for attempt in attempt_rows:
+        current_round = int(attempt["round"])
+        attempts.append(
+            {
+                "id": str(attempt["id"]),
+                "round": "Round 1" if current_round == 1 else "Round 2" if current_round == 2 else "Round 3",
+                "attemptNo": f"Attempt {int(attempt['attempt_no'])}",
+                "attemptedDate": format_display_date(attempt["created_at"]),
+                "fileName": attempt["topic"] or f"Round {current_round} Submission",
+                "solution": attempt["code"] or "",
+            }
+        )
+
+    return {
+        "id": str(candidate_row["id"]),
+        "name": candidate_row["name"],
+        "email": candidate_row["email"],
+        "phone": candidate_row["phone"],
+        "startDate": format_date_value(candidate_row["start_date"] or candidate_row["created_at"]),
+        "karatAssessmentDate": format_date_value(candidate_row["karat_assessment_date"]),
+        "timeline": candidate_row["karat_prep_timeline"] or "",
+        "leadName": candidate_row["lead_name"] or "",
+        "status": candidate_row["status"] or "",
+        "role": candidate_row["role"] or "candidate",
+        "round1Attempts": int(candidate_row["round1_attempts"] or 0),
+        "round2Attempts": int(candidate_row["round2_attempts"] or 0),
+        "totalMockAttempts": int(candidate_row["mock_attempts"] or 0),
+        "attempts": attempts,
+    }
+
+
+@app.put("/api/reviewer/candidates/{candidate_id}")
+def update_reviewer_candidate(candidate_id: str, payload: CandidateUpdateRequest):
+    with engine.begin() as connection:
+        existing = connection.execute(
+            text("SELECT id FROM candidates WHERE id::text = :candidate_id"),
+            {"candidate_id": candidate_id},
+        ).fetchone()
+
+        if existing is None:
+            raise HTTPException(status_code=404, detail="Candidate not found.")
+
+        start_date = payload.start_date.strip() if payload.start_date and payload.start_date.strip() else None
+        assessment_date = (
+            payload.karat_assessment_date.strip()
+            if payload.karat_assessment_date and payload.karat_assessment_date.strip()
+            else None
+        )
+        timeline = payload.karat_prep_timeline.strip() if payload.karat_prep_timeline else None
+        role = payload.role.strip() if payload.role and payload.role.strip() else "candidate"
+
+        connection.execute(
+            text(
+                """
+                UPDATE candidates
+                SET
+                    name = :name,
+                    email = :email,
+                    phone = :phone,
+                    lead_name = :lead_name,
+                    status = :status,
+                    role = :role,
+                    start_date = :start_date,
+                    karat_prep_timeline = :karat_prep_timeline,
+                    karat_assessment_date = :karat_assessment_date,
+                    updated_at = NOW()
+                WHERE id::text = :candidate_id
+                """
+            ),
+            {
+                "name": payload.name.strip(),
+                "email": payload.email.strip().lower(),
+                "phone": payload.phone.strip() if payload.phone and payload.phone.strip() else None,
+                "lead_name": payload.lead_name.strip() if payload.lead_name and payload.lead_name.strip() else None,
+                "status": payload.status.strip() if payload.status and payload.status.strip() else "pending",
+                "role": role,
+                "start_date": start_date,
+                "karat_prep_timeline": timeline,
+                "karat_assessment_date": assessment_date,
+                "candidate_id": candidate_id,
+            },
+        )
+
+        row = connection.execute(
+            text(
+                """
+                SELECT
+                    c.id,
+                    c.name,
+                    c.email,
+                    c.phone,
+                    c.created_at,
+                    c.start_date,
+                    c.karat_prep_timeline,
+                    c.karat_assessment_date,
+                    c.role,
+                    c.lead_name,
+                    c.status
+                FROM candidates c
+                WHERE c.id::text = :candidate_id
+                """
+            ),
+            {"candidate_id": candidate_id},
+        ).mappings().first()
+
+    if row is None:
+        raise HTTPException(status_code=404, detail="Candidate not found.")
+
+    return {
+        "id": str(row["id"]),
+        "name": row["name"],
+        "email": row["email"],
+        "phone": row["phone"],
+        "startDate": format_date_value(row["start_date"] or row["created_at"]),
+        "karatAssessmentDate": format_date_value(row["karat_assessment_date"]),
+        "timeline": row["karat_prep_timeline"] or "",
+        "leadName": row["lead_name"] or "",
+        "status": row["status"] or "",
+        "role": row["role"] or "candidate",
+    }
 
 
 @app.post("/api/signup")
@@ -352,6 +706,280 @@ def start_debugging_drill(request: Request):
         raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed to start debugging drill: {str(exc)}") from exc
+
+
+@app.post("/api/assessments/start-exercise-question")
+def start_exercise_question(request: Request):
+    candidate_token = (request.cookies.get("auth_token") or "").strip()
+    if not candidate_token or not candidate_token.startswith("candidate-"):
+        raise HTTPException(status_code=401, detail="Candidate not logged in.")
+
+    candidate_id = candidate_token.replace("candidate-", "", 1)
+
+    try:
+        with engine.begin() as connection:
+            candidate = connection.execute(
+                text("SELECT id FROM candidates WHERE id::text = :candidate_id"),
+                {"candidate_id": candidate_id},
+            ).fetchone()
+
+            if not candidate:
+                raise HTTPException(status_code=404, detail="Candidate not found.")
+
+            candidate_uuid = candidate[0]
+
+            next_attempt = connection.execute(
+                text(
+                    """
+                    SELECT COALESCE(MAX(attempt_no), 0) + 1
+                    FROM assessments
+                    WHERE candidate_id = :candidate_uuid AND round = 2
+                    """
+                ),
+                {"candidate_uuid": candidate_uuid},
+            ).scalar()
+
+            assessment_id = str(uuid.uuid4())
+
+            connection.execute(
+                text(
+                    """
+                    INSERT INTO assessments (
+                        id, candidate_id, attempt_no, round, status, created_at, updated_at
+                    ) VALUES (
+                        :assessment_id,
+                        :candidate_uuid,
+                        :attempt_no,
+                        :round,
+                        :status,
+                        NOW(),
+                        NOW()
+                    )
+                    """
+                ),
+                {
+                    "assessment_id": assessment_id,
+                    "candidate_uuid": candidate_uuid,
+                    "attempt_no": int(next_attempt),
+                    "round": 2,
+                    "status": "in_progress",
+                },
+            )
+
+        question = get_random_exercise_question()
+        question_topic = question.get("title") or question.get("topic") or "Exercise Question"
+
+        with engine.begin() as connection:
+            next_question_no = connection.execute(
+                text(
+                    """
+                    SELECT COALESCE(MAX(question_no), 0) + 1
+                    FROM questions
+                    WHERE assessment_id = :assessment_id
+                    """
+                ),
+                {"assessment_id": assessment_id},
+            ).scalar()
+
+            question_id = str(uuid.uuid4())
+
+            connection.execute(
+                text(
+                    """
+                    INSERT INTO questions (
+                        id,
+                        assessment_id,
+                        candidate_id,
+                        question_no,
+                        topic,
+                        subtopic,
+                        difficulty,
+                        description,
+                        code,
+                        source,
+                        created_at,
+                        updated_at
+                    ) VALUES (
+                        :id,
+                        :assessment_id,
+                        :candidate_id,
+                        :question_no,
+                        :topic,
+                        :subtopic,
+                        :difficulty,
+                        :description,
+                        :code,
+                        :source,
+                        NOW(),
+                        NOW()
+                    )
+                    """
+                ),
+                {
+                    "id": question_id,
+                    "assessment_id": assessment_id,
+                    "candidate_id": candidate_uuid,
+                    "question_no": int(next_question_no),
+                    "topic": question_topic,
+                    "subtopic": "",
+                    "difficulty": "",
+                    "description": "",
+                    "code": question.get("code", ""),
+                    "source": "excel",
+                },
+            )
+
+        return {
+            "assessmentId": assessment_id,
+            "candidateId": str(candidate_uuid),
+            "attempt_no": int(next_attempt),
+            "round": 2,
+            "status": "in_progress",
+            "question": {
+                "id": question_id,
+                "questionNo": int(next_question_no),
+                "title": question_topic,
+                "code": question.get("code", ""),
+                "topic": question_topic,
+                "source": "excel",
+            },
+            "questionId": question_id,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to start exercise question: {str(exc)}") from exc
+
+
+@app.post("/api/assessments/submit-exercise-question")
+def submit_exercise_question(payload: ExerciseQuestionSubmitRequest, request: Request):
+    candidate_token = (request.cookies.get("auth_token") or "").strip()
+    if not candidate_token or not candidate_token.startswith("candidate-"):
+        raise HTTPException(status_code=401, detail="Candidate not logged in.")
+
+    candidate_id = candidate_token.replace("candidate-", "", 1)
+
+    try:
+        with engine.begin() as connection:
+            candidate = connection.execute(
+                text("SELECT id FROM candidates WHERE id::text = :candidate_id"),
+                {"candidate_id": candidate_id},
+            ).fetchone()
+
+            if not candidate:
+                raise HTTPException(status_code=404, detail="Candidate not found.")
+
+            assessment = connection.execute(
+                text(
+                    """
+                    SELECT id
+                    FROM assessments
+                    WHERE id::text = :assessment_id
+                      AND candidate_id = :candidate_uuid
+                      AND round = 2
+                    """
+                ),
+                {"assessment_id": payload.assessmentId, "candidate_uuid": candidate[0]},
+            ).fetchone()
+
+            if not assessment:
+                raise HTTPException(status_code=404, detail="Assessment not found for this candidate.")
+
+            question = connection.execute(
+                text(
+                    """
+                    SELECT id
+                    FROM questions
+                    WHERE id::text = :question_id
+                      AND assessment_id = :assessment_id
+                      AND candidate_id = :candidate_uuid
+                    """
+                ),
+                {
+                    "question_id": payload.questionId,
+                    "assessment_id": assessment[0],
+                    "candidate_uuid": candidate[0],
+                },
+            ).fetchone()
+
+            if not question:
+                raise HTTPException(status_code=404, detail="Question not found for this assessment.")
+
+            evaluation_id = str(uuid.uuid4())
+
+            connection.execute(
+                text(
+                    """
+                    INSERT INTO evaluations (
+                        id,
+                        assessment_id,
+                        candidate_id,
+                        question_id,
+                        user_code,
+                        user_analysis,
+                        score,
+                        correct,
+                        explanation,
+                        suggestions,
+                        corrected_code,
+                        created_at,
+                        updated_at
+                    ) VALUES (
+                        :id,
+                        :assessment_id,
+                        :candidate_id,
+                        :question_id,
+                        :user_code,
+                        :user_analysis,
+                        :score,
+                        :correct,
+                        :explanation,
+                        :suggestions,
+                        :corrected_code,
+                        NOW(),
+                        NOW()
+                    )
+                    ON CONFLICT (question_id) DO UPDATE SET
+                        assessment_id = EXCLUDED.assessment_id,
+                        candidate_id = EXCLUDED.candidate_id,
+                        user_code = EXCLUDED.user_code,
+                        user_analysis = EXCLUDED.user_analysis,
+                        score = EXCLUDED.score,
+                        correct = EXCLUDED.correct,
+                        explanation = EXCLUDED.explanation,
+                        suggestions = EXCLUDED.suggestions,
+                        corrected_code = EXCLUDED.corrected_code,
+                        updated_at = NOW()
+                    """
+                ),
+                {
+                    "id": evaluation_id,
+                    "assessment_id": assessment[0],
+                    "candidate_id": candidate[0],
+                    "question_id": question[0],
+                    "user_code": payload.userCode or "",
+                    "user_analysis": payload.userAnalysis or "",
+                    "score": None,
+                    "correct": None,
+                    "explanation": "",
+                    "suggestions": "",
+                    "corrected_code": "",
+                },
+            )
+
+        return {
+            "message": "Exercise question submitted.",
+            "evaluationId": evaluation_id,
+            "assessmentId": payload.assessmentId,
+            "questionId": payload.questionId,
+            "submitted": True,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to submit exercise question: {str(exc)}") from exc
 
 
 # ---------------------------------------------------------

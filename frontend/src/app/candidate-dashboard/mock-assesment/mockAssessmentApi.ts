@@ -1,7 +1,4 @@
-import {
-  AssessmentData,
-  EvaluationResult,
-} from "./mockAssessment";
+import { AssessmentData } from "./mockAssessment";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000";
@@ -10,11 +7,12 @@ export async function fetchAssessment(): Promise<AssessmentData> {
   try {
     const response = await fetch(
       `${API_BASE_URL}/api/mock-assessment/questions`,
-      { 
+      {
         cache: "no-store",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-        }
+        },
       }
     );
 
@@ -42,16 +40,17 @@ export async function fetchAssessment(): Promise<AssessmentData> {
   }
 }
 
-export async function evaluateQuestion(
+export async function submitQuestion(
   assessmentId: string,
   questionNo: number,
   userCode: string
-): Promise<EvaluationResult> {
+): Promise<{ message: string; assessmentId: string; questionId: string; submitted: boolean }> {
   try {
     const response = await fetch(
       `${API_BASE_URL}/api/mock-assessment/evaluate`,
       {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -71,7 +70,9 @@ export async function evaluateQuestion(
 
     return response.json();
   } catch (error) {
-    console.error("Evaluation API Error:", error);
+    console.error("Submit API Error:", error);
     throw error;
   }
 }
+
+export const evaluateQuestion = submitQuestion;

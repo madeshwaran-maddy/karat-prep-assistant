@@ -1,14 +1,10 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import CodeEditor from "./CodeEditor";
-import {
-  AssessmentQuestion,
-  EvaluationResult,
-} from "./mockAssessment";
-import { evaluateQuestion } from "./mockAssessmentApi";
+import { AssessmentQuestion } from "./mockAssessment";
+import { submitQuestion } from "./mockAssessmentApi";
 
 interface Props {
   assessmentId: string;
@@ -23,42 +19,44 @@ export default function QuestionPanel({
   onNext,
   hasNext,
 }: Props) {
-  const router = useRouter();
   const [code, setCode] = useState(question.code);
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<EvaluationResult | null>(null);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
     setCode(question.code);
-    setResult(null);
     setError("");
+    setSuccessMessage("");
   }, [question]);
 
   const isRound1 = question.round === 1;
 
-  function handleSubmit() {
-    if (!hasNext) {
-      router.push("/candidate-dashboard");
-      return;
-    }
-
+  async function handleSubmit() {
     setSubmitting(true);
     setError("");
+    setSuccessMessage("");
 
     try {
-      const evaluation = evaluateQuestion(
+      const response = await submitQuestion(
         assessmentId,
         question.questionNo,
         code
       );
 
-      setResult(evaluation);
+      if (response?.submitted) {
+        if (!hasNext) {
+          window.location.href = "/candidate-dashboard";
+          return;
+        }
+
+        setSuccessMessage("Code saved successfully.");
+      }
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Failed to evaluate the solution."
+          : "Failed to submit the solution."
       );
     } finally {
       setSubmitting(false);
@@ -112,28 +110,9 @@ export default function QuestionPanel({
         </div>
       )}
 
-      {result && (
-        <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-slate-800">
-              Evaluation
-            </h3>
-            <span className="font-bold">
-              {result.score}/10
-            </span>
-          </div>
-
-          <p className="mt-2 text-sm text-slate-600">
-            {result.explanation}
-          </p>
-
-          {result.suggestions.length > 0 && (
-            <ul className="mt-3 list-disc pl-5 text-sm text-slate-600">
-              {result.suggestions.map((suggestion, index) => (
-                <li key={index}>{suggestion}</li>
-              ))}
-            </ul>
-          )}
+      {successMessage && (
+        <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+          {successMessage}
         </div>
       )}
 
@@ -141,7 +120,7 @@ export default function QuestionPanel({
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={submitting || hasNext}
+          disabled={submitting}
           className="rounded-lg bg-blue-600 px-7 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           {submitting ? "Evaluating..." : "Submit"}

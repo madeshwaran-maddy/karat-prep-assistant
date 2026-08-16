@@ -25,6 +25,7 @@ export interface GenerateRequest {
 }
 
 export interface GenerateResponse {
+  id?: string;
   topic: string;
   difficulty: string;
   code: string;
@@ -32,7 +33,10 @@ export interface GenerateResponse {
 
 export interface EvaluateRequest {
   id: string;
+  questionId?: string;
+  assessmentId?: string;
   userAnalysis: string;
+  userCode?: string;
   originalCode?: string;
 }
 

@@ -44,6 +44,11 @@ export function useDrill() {
   const activeGenerationRef = useRef<string | null>(null);
   const topicQuestionCountsRef = useRef<Record<string, number>>({});
   const [questionProgress, setQuestionProgress] = useState({ topicId: "", count: 0 });
+  const [submittedQuestionIds, setSubmittedQuestionIds] = useState<string[]>([]);
+
+  const hasSubmittedCurrentQuestion = Boolean(
+    generatedQuestion?.id && submittedQuestionIds.includes(generatedQuestion.id)
+  );
 
   const generate = useCallback(
     async (drill?: Drill, resetCount = false) => {
@@ -153,31 +158,44 @@ export function useDrill() {
   }, [setAnalysisText]);
 
   const submitSolution = useCallback(async () => {
-    if (!selectedDrill) {
+    if (!selectedDrill || !generatedQuestion) {
       return;
     }
 
-    // Evaluate based on candidate analysis text instead of code
+    if (generatedQuestion.id && submittedQuestionIds.includes(generatedQuestion.id)) {
+      return;
+    }
+
     if (!analysisText || !analysisText.trim()) {
       return;
     }
 
     try {
       setEvaluating(true);
+      if (generatedQuestion.id) {
+        setSubmittedQuestionIds((current) => [...current, generatedQuestion.id as string]);
+      }
+
       const response: EvaluateResponse = await evaluateQuestion({
         id: selectedDrill.id,
+        questionId: generatedQuestion.id,
+        assessmentId: typeof window !== "undefined" ? localStorage.getItem("debuggingAssessmentId") || undefined : undefined,
         userAnalysis: analysisText,
-        originalCode: editorCode,
+        userCode: editorCode,
+        originalCode: generatedQuestion.code,
       });
 
       setEvaluation(response);
       openDrawer();
     } catch (error) {
       console.error("Evaluation failed", error);
+      if (generatedQuestion.id) {
+        setSubmittedQuestionIds((current) => current.filter((item) => item !== generatedQuestion.id));
+      }
     } finally {
       setEvaluating(false);
     }
-  }, [selectedDrill, analysisText, setEvaluating, setEvaluation, openDrawer]);
+  }, [selectedDrill, generatedQuestion, analysisText, editorCode, setEvaluating, setEvaluation, openDrawer, submittedQuestionIds]);
 
   const closeResult = useCallback(() => {
     closeDrawer();
@@ -207,6 +225,7 @@ export function useDrill() {
     generateQuestion: generate,
     nextQuestion,
     questionProgress,
+    hasSubmittedCurrentQuestion,
     updateCode,
     updateAnalysis,
     submitSolution,

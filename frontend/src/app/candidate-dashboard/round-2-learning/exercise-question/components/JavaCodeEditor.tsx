@@ -23,6 +23,8 @@ export default function JavaCodeEditor({
 
   const [error, setError] = useState("");
 
+  const [submitting, setSubmitting] = useState(false);
+
   async function runCode() {
     try {
       setRunning(true);
@@ -147,7 +149,7 @@ export default function JavaCodeEditor({
       </div>
 
       {/* Run button */}
-      <div className="mt-6 flex justify-end">
+      <div className="mt-6 flex justify-end gap-3">
 
         <button
           type="button"
@@ -158,6 +160,46 @@ export default function JavaCodeEditor({
           {running
             ? "Running..."
             : "Run"}
+        </button>
+
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              setSubmitting(true);
+
+              const response = await fetch("http://localhost:8000/api/assessments/submit-exercise-question", {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  assessmentId: question.assessmentId,
+                  questionId: question.id,
+                  userCode: code,
+                  userAnalysis: output || error || "",
+                }),
+              });
+
+              const data = await response.json().catch(() => ({}));
+
+              if (!response.ok) {
+                throw new Error(data.detail || "Failed to submit exercise question.");
+              }
+
+              alert(data.message || "Exercise answer submitted successfully.");
+            } catch (submitError) {
+              console.error("Exercise submit failed", submitError);
+              alert(submitError instanceof Error ? submitError.message : "Failed to submit exercise question.");
+            } finally {
+              setSubmitting(false);
+            }
+          }}
+          disabled={submitting}
+          className="rounded-lg bg-emerald-600 px-10 py-3 font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {submitting ? "Submitting..." : "Submit"}
         </button>
 
       </div>

@@ -42,6 +42,7 @@ export async function evaluateQuestion(
         headers: {
             "Content-Type": "application/json"
         },
+        credentials: "include",
         body: JSON.stringify(request)
     });
 

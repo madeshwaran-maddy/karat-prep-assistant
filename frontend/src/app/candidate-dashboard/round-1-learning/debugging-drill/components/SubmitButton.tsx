@@ -17,6 +17,7 @@ export default function SubmitButton({
         className="submit-button"
         disabled={disabled || loading}
         onClick={onSubmit}
+        aria-disabled={disabled || loading}
       >
         {loading ? "Evaluating..." : "Submit Fix"}
       </button>

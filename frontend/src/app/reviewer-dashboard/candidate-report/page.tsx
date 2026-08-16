@@ -1,14 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ReviewerShell } from "../components/ReviewerShell";
-import { candidates } from "../lib/reviewer-data";
+import { Candidate, fetchCandidates } from "../lib/reviewer-data";
 import styles from "../reviewer-dashboard.module.css";
 
 export default function CandidateReportPage() {
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState("");
+
+  useEffect(() => {
+    fetchCandidates().then(setCandidates).catch(() => setCandidates([]));
+  }, []);
 
   const suggestions = useMemo(() => {
     const value = search.trim().toLowerCase();
@@ -24,7 +29,7 @@ export default function CandidateReportPage() {
           candidate.email.toLowerCase().includes(value)
       )
       .slice(0, 6);
-  }, [search]);
+  }, [candidates, search]);
 
   const results = selectedId
     ? candidates.filter((candidate) => candidate.id === selectedId)
@@ -99,7 +104,9 @@ export default function CandidateReportPage() {
                 <th>Lead Name</th>
                 <th>Total R1 Attempt</th>
                 <th>Total R2 Attempt</th>
-                <th>View Detailed Report</th>
+                <th>Total Mock Attempt</th>
+                <th>View Learning Progress</th>
+                <th>View Assessment Report</th>
               </tr>
             </thead>
 
@@ -112,6 +119,15 @@ export default function CandidateReportPage() {
                   <td>{candidate.leadName}</td>
                   <td>{candidate.round1Attempts}</td>
                   <td>{candidate.round2Attempts}</td>
+                  <td>{candidate.totalMockAttempts ?? 0}</td>
+                  <td>
+                    <Link
+                      className={styles.smallButton}
+                      href={`./candidate-report/${candidate.id}/learning-progress`}
+                    >
+                      View
+                    </Link>
+                  </td>
                   <td>
                     <Link
                       className={styles.smallButton}
@@ -127,7 +143,7 @@ export default function CandidateReportPage() {
         </div>
 
         <div className={styles.infoNote}>
-          Click &quot;View&quot; to open the Candidate Detailed Report screen.
+          Click &quot;View&quot; in any row to open the learning progress or assessment report screen.
         </div>
       </section>
     </ReviewerShell>

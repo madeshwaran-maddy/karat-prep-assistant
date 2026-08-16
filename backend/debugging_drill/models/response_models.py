@@ -11,6 +11,11 @@ class GenerateResponse(BaseModel):
     a debugging question.
     """
 
+    id: str | None = Field(
+        default=None,
+        description="Persisted question id"
+    )
+
     topic: str = Field(
         ...,
         description="Java topic"

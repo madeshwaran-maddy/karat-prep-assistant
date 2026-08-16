@@ -73,6 +73,8 @@ Then confirm the service is running at:
 ```bash
 cd backend
 
+venv\Scripts\activate.bat - go inside venv if not inside venv
+
 uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 

@@ -77,6 +77,9 @@ CREATE TABLE candidates (
     status VARCHAR(50),  -- pending, in_progress, completed , cleared , rejected
     role VARCHAR(50),  -- candidate, reviewer, admin
     lead_name VARCHAR(255),
+    start_date date,
+    karat_prep_timeline VARCHAR(255),  -- 4 weeks, 6 weeks, 8 weeks
+    karat_assessment_date date,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
     password_hash VARCHAR(1000)  -- for future authentication (bcrypt or argon2
@@ -124,7 +127,8 @@ CREATE TABLE evaluations (
     suggestions TEXT[],  -- JSON array
     corrected_code TEXT,
     submitted_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 ```
 

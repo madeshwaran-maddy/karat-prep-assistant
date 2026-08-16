@@ -2,13 +2,18 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { ReviewerShell } from "../../components/ReviewerShell";
-import { getCandidate } from "../../lib/reviewer-data";
+import { Candidate, fetchCandidate } from "../../lib/reviewer-data";
 import styles from "../../reviewer-dashboard.module.css";
 
 export default function CandidateDetailedReportPage() {
   const params = useParams<{ candidateId: string }>();
-  const candidate = getCandidate(params.candidateId);
+  const [candidate, setCandidate] = useState<Candidate | null>(null);
+
+  useEffect(() => {
+    fetchCandidate(params.candidateId).then(setCandidate).catch(() => setCandidate(null));
+  }, [params.candidateId]);
 
   if (!candidate) {
     return <div className={styles.notFound}>Candidate not found.</div>;

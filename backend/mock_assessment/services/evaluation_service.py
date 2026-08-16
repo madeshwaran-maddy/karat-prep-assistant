@@ -30,6 +30,26 @@ def load_evaluation_prompt():
         return file.read()
 
 
+def build_evaluation_submission(
+    assessment_id: str,
+    candidate_id: str,
+    question_id: str,
+    user_code: str,
+):
+    return {
+        "assessment_id": assessment_id,
+        "candidate_id": candidate_id,
+        "question_id": question_id,
+        "user_code": user_code or "",
+        "user_analysis": "",
+        "score": None,
+        "correct": None,
+        "explanation": "",
+        "suggestions": "",
+        "corrected_code": "",
+    }
+
+
 async def evaluate_code(
     topic: str,
     difficulty: str,

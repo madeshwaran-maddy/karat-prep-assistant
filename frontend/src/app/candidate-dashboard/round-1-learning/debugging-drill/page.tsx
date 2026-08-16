@@ -23,6 +23,7 @@ export default function DebuggingDrillPage() {
     selectDrill,
     nextQuestion,
     questionProgress,
+    hasSubmittedCurrentQuestion,
     updateCode,
     updateAnalysis,
     analysisText,
@@ -79,7 +80,7 @@ export default function DebuggingDrillPage() {
 
           <div className="mt-4 flex flex-col items-end gap-3">
             <SubmitButton
-              disabled={!generatedQuestion}
+              disabled={!generatedQuestion || hasSubmittedCurrentQuestion}
               loading={evaluating}
               onSubmit={submitSolution}
             />
