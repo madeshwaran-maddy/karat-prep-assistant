@@ -16,7 +16,7 @@ export default function PracticeQuestionsPage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-[280px_1fr] gap-5 h-[calc(100vh-3rem)] overflow-hidden">
+        <div className="grid gap-5 h-[calc(100vh-7rem)] grid-cols-[300px_1fr] overflow-hidden">
           <Sidebar />
           <QuestionPanel />
         </div>

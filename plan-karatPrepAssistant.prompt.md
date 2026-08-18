@@ -130,6 +130,24 @@ CREATE TABLE evaluations (
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
+
+CREATE TABLE practice_question_progress (
+    id UUID PRIMARY KEY,
+    candidate_id UUID NOT NULL REFERENCES candidates(id),
+	language_selected VARCHAR(255),
+    section VARCHAR NOT NULL,
+    topic_id VARCHAR NOT NULL,
+    question_no INTEGER NOT NULL,
+    status VARCHAR NOT NULL,
+    time_spent_seconds INTEGER DEFAULT 0,
+    started_at TIMESTAMP,
+    completed_at TIMESTAMP,
+    last_accessed TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+
 ```
 
 ### Relationships

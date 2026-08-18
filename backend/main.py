@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import json
 import os
 import uuid
 from datetime import datetime
@@ -15,6 +16,8 @@ from debugging_drill.api.routes import router as debugging_router
 from debugging_drill.services.ollama_service import OllamaService
 from mock_assessment.api.routes import router as mock_assessment_router
 from mock_assessment.services.excel_service import get_random_exercise_question
+from concept_learning.routes import router as concept_learning_router
+from practice_question_tracking.routes import router as practice_question_router
 
 load_dotenv()
 
@@ -29,6 +32,25 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def ensure_schema():
     with engine.begin() as connection:
+        candidates_exists = connection.execute(
+            text(
+                """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = 'candidates'
+                )
+                """
+            )
+        ).scalar()
+
+        if not candidates_exists:
+            connection.execute(text("DROP TABLE IF EXISTS practice_question_progress CASCADE"))
+            connection.execute(text("DROP TABLE IF EXISTS concept_progress CASCADE"))
+            connection.execute(text("DROP TABLE IF EXISTS evaluations CASCADE"))
+            connection.execute(text("DROP TABLE IF EXISTS questions CASCADE"))
+            connection.execute(text("DROP TABLE IF EXISTS assessments CASCADE"))
+
         connection.execute(
             text(
                 """
@@ -152,6 +174,68 @@ def ensure_schema():
                 """
                 CREATE UNIQUE INDEX IF NOT EXISTS uq_evaluations_question_id
                 ON evaluations (question_id)
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS concept_progress (
+                    id UUID PRIMARY KEY,
+                    candidate_id UUID NOT NULL REFERENCES candidates(id),
+                    concept_id VARCHAR(255) NOT NULL,
+                    status VARCHAR(50) NOT NULL DEFAULT 'not_started',
+                    started_at TIMESTAMP,
+                    completed_at TIMESTAMP,
+                    time_spent_seconds INTEGER DEFAULT 0,
+                    last_accessed TIMESTAMP DEFAULT NOW(),
+                    notes TEXT,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW(),
+                    UNIQUE(candidate_id, concept_id)
+                )
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_concept_progress_candidate
+                ON concept_progress (candidate_id)
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS practice_question_progress (
+                    id UUID PRIMARY KEY,
+                    candidate_id UUID NOT NULL REFERENCES candidates(id),
+                    language_selected VARCHAR(255),
+                    section VARCHAR(255) NOT NULL,
+                    topic_id VARCHAR(255) NOT NULL,
+                    question_no INTEGER NOT NULL,
+                    status VARCHAR(50) NOT NULL DEFAULT 'not_started',
+                    time_spent_seconds INTEGER DEFAULT 0,
+                    started_at TIMESTAMP,
+                    completed_at TIMESTAMP,
+                    last_accessed TIMESTAMP DEFAULT NOW(),
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW(),
+                    UNIQUE(candidate_id, section, topic_id, question_no)
+                )
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_practice_progress_candidate
+                ON practice_question_progress (candidate_id)
                 """
             )
         )
@@ -421,34 +505,81 @@ def get_reviewer_candidate(candidate_id: str):
             text(
                 """
                 SELECT
-                    a.id,
+                    a.id AS assessment_id,
                     a.round,
                     a.attempt_no,
                     a.created_at,
+                    q.id AS question_id,
+                    q.question_no,
                     q.topic,
-                    q.code
+                    q.subtopic,
+                    q.code AS question_code,
+                    e.user_code,
+                    e.user_analysis,
+                    e.score,
+                    e.explanation,
+                    e.suggestions
                 FROM assessments a
-                LEFT JOIN questions q ON q.assessment_id = a.id AND q.question_no = 1
+                LEFT JOIN questions q ON q.assessment_id = a.id
+                LEFT JOIN evaluations e ON e.question_id = q.id
                 WHERE a.candidate_id::text = :candidate_id
-                ORDER BY a.created_at ASC
+                ORDER BY a.created_at ASC, q.question_no ASC
                 """
             ),
             {"candidate_id": candidate_id},
         ).mappings().all()
 
     attempts = []
+    attempts_by_id = {}
     for attempt in attempt_rows:
-        current_round = int(attempt["round"])
-        attempts.append(
-            {
-                "id": str(attempt["id"]),
+        assessment_id = str(attempt.get("assessment_id") or attempt.get("id") or "")
+        if not assessment_id:
+            continue
+
+        if assessment_id not in attempts_by_id:
+            current_round = int(attempt.get("round") or 1)
+            attempts_by_id[assessment_id] = {
+                "id": assessment_id,
                 "round": "Round 1" if current_round == 1 else "Round 2" if current_round == 2 else "Round 3",
-                "attemptNo": f"Attempt {int(attempt['attempt_no'])}",
-                "attemptedDate": format_display_date(attempt["created_at"]),
-                "fileName": attempt["topic"] or f"Round {current_round} Submission",
-                "solution": attempt["code"] or "",
+                "attemptNo": f"Attempt {int(attempt.get('attempt_no') or 1)}",
+                "attemptedDate": format_display_date(attempt.get("created_at")),
+                "fileName": attempt.get("topic") or f"Round {current_round} Submission",
+                "solution": attempt.get("question_code") or "",
+                "questions": [],
+            }
+
+        question_id = attempt.get("question_id")
+        if question_id is None:
+            continue
+
+        suggestions = attempt.get("suggestions") or "[]"
+        parsed_suggestions = []
+        if isinstance(suggestions, str):
+            try:
+                parsed_value = json.loads(suggestions)
+                if isinstance(parsed_value, list):
+                    parsed_suggestions = [str(item) for item in parsed_value]
+                elif parsed_value:
+                    parsed_suggestions = [str(parsed_value)]
+            except (TypeError, ValueError):
+                parsed_suggestions = [suggestions] if suggestions else []
+
+        attempts_by_id[assessment_id]["questions"].append(
+            {
+                "id": str(question_id),
+                "questionNo": int(attempt.get("question_no") or 1),
+                "topic": attempt.get("topic") or f"Question {int(attempt.get('question_no') or 1)}",
+                "subtopic": attempt.get("subtopic") or "General",
+                "questionCode": attempt.get("question_code") or "",
+                "userCode": attempt.get("user_code") or "",
+                "userAnalysis": attempt.get("user_analysis") or "",
+                "score": attempt.get("score"),
+                "explanation": attempt.get("explanation") or "",
+                "suggestions": parsed_suggestions,
             }
         )
+
+    attempts = list(attempts_by_id.values())
 
     return {
         "id": str(candidate_row["id"]),
@@ -991,4 +1122,10 @@ app.include_router(
 )
 app.include_router(
     mock_assessment_router
+)
+app.include_router(
+    concept_learning_router
+)
+app.include_router(
+    practice_question_router
 )

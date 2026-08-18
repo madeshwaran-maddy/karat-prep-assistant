@@ -1,3 +1,16 @@
+export type AttemptQuestion = {
+  id: string;
+  questionNo: number;
+  topic: string;
+  subtopic: string;
+  questionCode: string;
+  userCode: string;
+  userAnalysis: string;
+  score: number | string | null;
+  explanation: string;
+  suggestions: string[];
+};
+
 export type Attempt = {
   id: string;
   round: "Round 1" | "Round 2" | "Round 3";
@@ -5,6 +18,7 @@ export type Attempt = {
   attemptedDate: string;
   fileName: string;
   solution: string;
+  questions?: AttemptQuestion[];
 };
 
 export type Candidate = {

@@ -2,16 +2,25 @@ import practiceData from "../data/practice-questions.json";
 import { PracticeData, Topic } from "../types/practice";
 import { FlatTopic } from "../types/practice";
 
+const SECTION_ORDER: readonly (keyof PracticeData)[] = [
+    "collections",
+    "exceptions",
+    "multithreading",
+    "equalsAndHashCode",
+];
+
 class PracticeQuestionService {
 
-    private data: PracticeData = practiceData;
+    // JSON module imports widen string literals. The content validation step
+    // restricts every authored difficulty to Easy, Medium, or Hard.
+    private data: PracticeData = practiceData as unknown as PracticeData;
 
     getData() {
         return this.data;
     }
 
     getSections() {
-        return Object.keys(this.data) as (keyof PracticeData)[];
+        return [...SECTION_ORDER];
     }
 
     getTopics(section: keyof PracticeData): Topic[] {
@@ -98,4 +107,6 @@ getPreviousTopic(
 
 }
 
-export default new PracticeQuestionService();
+const practiceQuestionService = new PracticeQuestionService();
+
+export default practiceQuestionService;

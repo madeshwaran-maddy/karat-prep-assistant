@@ -1,0 +1,99 @@
+/* Main layout wrapper - prevent page scrolling */
+.layoutWrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Grid container for sidebar and content */
+.gridContainer {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  grid-template-columns: 310px minmax(0, 1fr);
+  gap: 20px;
+  overflow: hidden;
+}
+
+/* Left sidebar with independent scroll */
+.sidebarScrollable {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  height: 100%;
+}
+
+/* Right content area with independent scroll */
+.contentScrollable {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  height: 100%;
+  flex: 1;
+}
+
+/* Container for concepts list inside sidebar */
+.scrollableContainer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+/* Scrollbar styling for webkit browsers (Chrome, Safari, Edge) */
+.scrollableContainer::-webkit-scrollbar,
+.sidebarScrollable::-webkit-scrollbar,
+.contentScrollable::-webkit-scrollbar {
+  width: 10px;
+}
+
+.scrollableContainer::-webkit-scrollbar-track,
+.sidebarScrollable::-webkit-scrollbar-track,
+.contentScrollable::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.scrollableContainer::-webkit-scrollbar-thumb,
+.sidebarScrollable::-webkit-scrollbar-thumb,
+.contentScrollable::-webkit-scrollbar-thumb {
+  background-color: #94a3b8;
+  border-radius: 10px;
+  border: 2px solid #f1f5f9;
+  background-clip: content-box;
+  min-height: 40px;
+}
+
+.scrollableContainer::-webkit-scrollbar-thumb:hover,
+.sidebarScrollable::-webkit-scrollbar-thumb:hover,
+.contentScrollable::-webkit-scrollbar-thumb:hover {
+  background-color: #64748b;
+  background-clip: content-box;
+}
+
+/* Firefox scrollbar styling */
+.scrollableContainer {
+  scrollbar-color: #94a3b8 #f1f5f9;
+  scrollbar-width: thin;
+}
+
+.sidebarScrollable {
+  scrollbar-color: #94a3b8 #f1f5f9;
+  scrollbar-width: thin;
+}
+
+.contentScrollable {
+  scrollbar-color: #94a3b8 #f1f5f9;
+  scrollbar-width: thin;
+}

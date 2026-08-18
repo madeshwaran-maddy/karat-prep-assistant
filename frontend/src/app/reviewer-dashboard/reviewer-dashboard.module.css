@@ -337,6 +337,133 @@
 .smallButton {
   padding: 10px 22px;
   font-size: 13px;
+  border: 0;
+  cursor: pointer;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1000;
+}
+
+.modalCard {
+  width: min(1100px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e1e1e8;
+  box-shadow: 0 20px 60px rgba(14, 19, 31, 0.22);
+  padding: 26px;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.modalHeader h3 {
+  margin: 8px 0 0;
+  font-size: 28px;
+}
+
+.modalEyebrow {
+  color: #5b3ccf;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.closeButton {
+  background: #eef0f6;
+  color: #182033;
+  border: 1px solid #dfe2ea;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.modalMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.modalMetaGrid > div {
+  padding: 18px;
+  background: #f8f8fc;
+  border: 1px solid #e7e9f0;
+  border-radius: 10px;
+}
+
+.modalMetaGrid span {
+  display: block;
+  color: #6c7485;
+  font-size: 12px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.modalMetaGrid strong {
+  font-size: 16px;
+}
+
+.modalContentGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.detailCard {
+  border: 1px solid #e4e5ea;
+  border-radius: 12px;
+  background: #fff;
+  padding: 18px;
+}
+
+.detailCard h4 {
+  margin: 0 0 14px;
+  font-size: 16px;
+}
+
+.detailCard pre,
+.detailCard p,
+.detailCard ul {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #2e3748;
+}
+
+.detailCard pre {
+  background: #101722;
+  color: #e8edf5;
+  border-radius: 8px;
+  padding: 16px;
+  overflow: auto;
+  min-height: 180px;
+  font-family: Consolas, Monaco, monospace;
+}
+
+.detailCard ul {
+  padding-left: 18px;
+}
+
+.detailCard li + li {
+  margin-top: 8px;
 }
 
 .infoNote {

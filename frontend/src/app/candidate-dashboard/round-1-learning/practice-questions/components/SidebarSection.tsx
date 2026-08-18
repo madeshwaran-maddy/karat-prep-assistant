@@ -17,6 +17,10 @@ export default function SidebarSection({
   topics,
 }: Props) {
   const [expanded, setExpanded] = useState(true);
+  const sectionQuestionCount = topics.reduce(
+    (total, topic) => total + topic.questions.length,
+    0
+  );
 
   return (
     <div className="mb-5">
@@ -25,7 +29,12 @@ export default function SidebarSection({
         className="flex w-full items-center justify-between rounded-md p-2 hover:bg-gray-100"
         onClick={() => setExpanded(!expanded)}
       >
-        <span className="font-semibold">{title}</span>
+        <span className="flex items-center gap-2 font-semibold">
+          {title}
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
+            {sectionQuestionCount}
+          </span>
+        </span>
 
         {expanded ? (
           <ChevronDown size={18} />
@@ -42,6 +51,7 @@ export default function SidebarSection({
               section={section}
               id={topic.id}
               title={topic.title}
+              questionCount={topic.questions.length}
             />
           ))}
         </div>

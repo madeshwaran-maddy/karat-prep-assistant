@@ -57,7 +57,7 @@ export default function CandidateDetailedReportPage() {
                 <th>Round 1 / Round 2</th>
                 <th>Attempt No</th>
                 <th>Attempted Date</th>
-                <th>View Solution</th>
+                <th>View Progress</th>
               </tr>
             </thead>
 
@@ -72,7 +72,7 @@ export default function CandidateDetailedReportPage() {
                       className={styles.smallButton}
                       href={`/reviewer-dashboard/candidate-report/${candidate.id}/attempt/${attempt.id}`}
                     >
-                      View Solution
+                      View Progress
                     </Link>
                   </td>
                 </tr>
@@ -86,7 +86,7 @@ export default function CandidateDetailedReportPage() {
             Back
           </Link>
           <span>
-            Click &quot;View Solution&quot; to open the submitted solution viewer.
+            Click &quot;View Progress&quot; to open the submitted solution viewer.
           </span>
         </div>
       </section>
