@@ -10,6 +10,7 @@ import { loadFormat } from "../lib/format";
 import { loadQuestionsFromExcel } from "../lib/excel";
 import type { FormatConfig, PracticeQuestion } from "../types";
 import { getProgressStatus, useRound2Progress } from "../hooks/useRound2Progress";
+import { useCandidateLanguage } from "../../../../../components/CandidateLanguageProvider";
 
 type TabKey = "format" | number;
 
@@ -21,6 +22,7 @@ export default function FormatPracticeQuestion() {
   const [error, setError] = useState("");
   const [isCompleting, setIsCompleting] = useState(false);
   const { progress, fetchAll, start, complete, updateTime } = useRound2Progress();
+  const { language } = useCandidateLanguage();
   const activeStartedAt = useRef<number | null>(null);
   const activeItem = useRef<{ topicId: string; questionNo: number } | null>(null);
 
@@ -115,9 +117,9 @@ export default function FormatPracticeQuestion() {
         setError("");
 
         const [formatData, questionData] = await Promise.all([
-          loadFormat("/format-practice-question/format.json"),
+          loadFormat(`/format-practice-question/${language.id}/format.json`),
           loadQuestionsFromExcel(
-            "/format-practice-question/questions.xlsx"
+            `/format-practice-question/${language.id}/questions.xlsx`
           ),
         ]);
 
@@ -154,7 +156,7 @@ export default function FormatPracticeQuestion() {
     }
 
     load();
-  }, [fetchAll]);
+  }, [fetchAll, language.id]);
 
   useEffect(() => {
     if (!loading && !error && (format || questions.length)) {
@@ -225,9 +227,9 @@ export default function FormatPracticeQuestion() {
               <p>
                 Check that these files exist:
                 <br />
-                <code>public/format-practice-question/format.json</code>
+                <code>public/format-practice-question/java/format.json</code>
                 <br />
-                <code>public/format-practice-question/questions.xlsx</code>
+                <code>public/format-practice-question/java/questions.xlsx</code>
               </p>
             </div>
           )}

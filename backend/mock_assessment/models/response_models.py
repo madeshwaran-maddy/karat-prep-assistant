@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 
 class Round1Question(BaseModel):
+    language: str = "java"
     questionNo: int
     topic: str
     description: str
@@ -13,6 +14,7 @@ class Round1Question(BaseModel):
 
 
 class Round2Question(BaseModel):
+    language: str = "java"
     questionNo: int
     title: str
     code: str
@@ -21,6 +23,7 @@ class Round2Question(BaseModel):
 
 
 class AssessmentResponse(BaseModel):
+    language: str = "java"
     assessmentId: str
     round1Questions: List[Round1Question]
     round2Question: Round2Question

@@ -10,6 +10,7 @@ import Explanation from "./Explanation";
 import NavigationBar from "./NavigationBar";
 import QuestionIndexBar from "./QuestionIndexBar";
 import { useEffect, useRef, useState } from "react";
+import { useCandidateLanguage } from "../../../../../components/CandidateLanguageProvider";
 
 export default function QuestionPanel() {
 
@@ -28,6 +29,7 @@ export default function QuestionPanel() {
   } = usePracticeQuestions();
 
   const [elapsedTime, setElapsedTime] = useState(0);
+  const { language } = useCandidateLanguage();
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const previousQuestionRef = useRef<{ section: string; topicId: string; questionNo: number } | null>(null);
   const topRef = useRef<HTMLDivElement>(null);
@@ -66,7 +68,7 @@ export default function QuestionPanel() {
     }
 
     // Start new question
-    startQuestion(section, topicId, currentQuestion.questionNo);
+    startQuestion(section, topicId, currentQuestion.questionNo, language.id);
     previousQuestionRef.current = {
       section,
       topicId,
@@ -77,12 +79,12 @@ export default function QuestionPanel() {
       behavior: "smooth"
     });
 
-  }, [questionIndex, topic, section, topicId, startQuestion, updateTimeSpent]);
+  }, [questionIndex, topic, section, topicId, language.id, startQuestion, updateTimeSpent]);
 
   if (!topic) {
     return (
       <div className="flex h-full items-center justify-center">
-        No topic selected
+        {language.name} practice-question content is not available yet.
       </div>
     );
   }

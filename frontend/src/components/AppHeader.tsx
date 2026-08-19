@@ -3,6 +3,7 @@
 import { UserCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useCandidateLanguage } from "./CandidateLanguageProvider";
 
 function getCookieValue(name: string) {
   if (typeof document === "undefined") return "";
@@ -18,6 +19,7 @@ export function AppHeader({ pageTitle = "Dashboard" }: { pageTitle?: string }) {
   const [userName, setUserName] = useState("Karat Demo User");
   const menuRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
+  const { language } = useCandidateLanguage();
 
   useEffect(() => {
     const cookieUser = getCookieValue("user_name");
@@ -45,6 +47,7 @@ export function AppHeader({ pageTitle = "Dashboard" }: { pageTitle?: string }) {
     clearCookie("auth_token");
     clearCookie("user_role");
     clearCookie("user_name");
+    clearCookie("language_selected");
     sessionStorage.clear();
     setMenuOpen(false);
 
@@ -81,6 +84,7 @@ export function AppHeader({ pageTitle = "Dashboard" }: { pageTitle?: string }) {
                   Logged in as
                 </p>
                 <p className="mt-1 text-sm font-semibold text-slate-800">{userName}</p>
+                <p className="mt-1 text-xs text-slate-500">Language: {language.name}</p>
               </div>
 
               <button

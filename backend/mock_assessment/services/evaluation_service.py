@@ -5,7 +5,7 @@ import httpx
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-PROMPT_FILE = BASE_DIR / "prompts" / "evaluate_prompt.txt"
+PROMPT_FILE = BASE_DIR / "prompts" / "java" / "evaluate_prompt.txt"
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL_NAME = "llama3.2:3b"

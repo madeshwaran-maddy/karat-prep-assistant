@@ -28,6 +28,7 @@ export default function DebuggingDrillPage() {
     updateCode,
     updateAnalysis,
     analysisText,
+    error,
     submitSolution,
     closeResult,
   } = useDrill();
@@ -56,6 +57,12 @@ export default function DebuggingDrillPage() {
         topic={generatedQuestion?.topic}
         difficulty={generatedQuestion?.difficulty}
       />
+
+      {error && (
+        <div className="mx-6 mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {error}
+        </div>
+      )}
 
       <div className="debug-layout">
 

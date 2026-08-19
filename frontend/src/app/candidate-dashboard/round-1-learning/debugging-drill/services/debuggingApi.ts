@@ -5,7 +5,8 @@ import {
     GenerateRequest,
     GenerateResponse
 } from "../types/drill";
-import drills from "../drills.json";
+import drills from "../data/java/drills.json";
+import type { SupportedLanguage } from "../../../../../config/languages";
 
 const BASE_URL = "http://localhost:8000/debugging-drill";
 
@@ -49,6 +50,8 @@ export async function evaluateQuestion(
     return handleResponse<EvaluateResponse>(response);
 }
 
-export async function loadDrills() {
-    return drills as Record<string, Drill[]>;
+export async function loadDrills(language: SupportedLanguage = "java") {
+    return language === "java"
+        ? drills as Record<string, Drill[]>
+        : {};
 }

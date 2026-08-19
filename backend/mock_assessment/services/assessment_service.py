@@ -3,11 +3,15 @@ import uuid
 from pathlib import Path
 
 from .ollama_service import generate_question
+try:
+    from config.languages import get_language
+except ModuleNotFoundError:
+    from backend.config.languages import get_language
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-DRILLS_FILE = BASE_DIR.parent / "debugging_drill" / "data" / "drills.json"
-PROMPT_FILE = BASE_DIR / "prompts" / "generate_question_prompt.txt"
+DRILLS_FILE = BASE_DIR.parent / "debugging_drill" / "data" / "java" / "drills.json"
+PROMPT_FILE = BASE_DIR / "prompts" / "java" / "generate_question_prompt.txt"
 
 
 def load_drills():
@@ -43,10 +47,27 @@ def load_prompt():
         return file.read()
 
 
-async def generate_round1_questions(count: int = 4):
+async def generate_round1_questions(count: int = 4, language_id: str = "java"):
     import random
 
-    drills = load_drills()
+    language = get_language(language_id)
+    drills_file = BASE_DIR.parent / "debugging_drill" / "data" / language["id"] / "drills.json"
+    with open(drills_file, "r", encoding="utf-8") as file:
+        source_data = json.load(file)
+
+    drills = []
+    for collection_items in source_data.values():
+        if isinstance(collection_items, list):
+            for item in collection_items:
+                prompt = item["prompt"]
+                drills.append({
+                    "id": item["id"],
+                    "title": item["title"],
+                    "difficulty": item["difficulty"],
+                    "topic": prompt["topic"],
+                    "bugTypes": prompt["bugTypes"],
+                    "rules": prompt["rules"],
+                })
 
     if len(drills) < count:
         raise ValueError(
@@ -73,10 +94,11 @@ async def generate_round1_questions(count: int = 4):
 
             questions.append({
                 "questionNo": index + 1,
+                "language": language["id"],
                 "topic": generated["topic"],
                 "description": generated["description"],
                 "code": generated["code"],
-                "fileName": f"MockAssessment_Question{index + 1}.java",
+                "fileName": f"MockAssessment_Question{index + 1}.{language['fileExtension']}",
                 "round": 1,
                 "source": "ollama",
                 "_difficulty": drill["difficulty"],

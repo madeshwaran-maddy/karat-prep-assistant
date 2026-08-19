@@ -17,6 +17,7 @@ import {
     Topic
 } from "../types/practice";
 import { QuestionProgress, TopicProgressSummary } from "../types/progress";
+import { useCandidateLanguage } from "../../../../../components/CandidateLanguageProvider";
 
 interface ContextType {
 
@@ -197,8 +198,15 @@ export default function PracticeQuestionProvider({
 
 }){
 
-    const data =
-    PracticeQuestionService.getData();
+    const { language } = useCandidateLanguage();
+    const data = language.id === "java"
+        ? PracticeQuestionService.getData()
+        : {
+            collections: [],
+            exceptions: [],
+            multithreading: [],
+            equalsAndHashCode: [],
+        };
 
     const [section,setSection] =
     useState<keyof PracticeData>(

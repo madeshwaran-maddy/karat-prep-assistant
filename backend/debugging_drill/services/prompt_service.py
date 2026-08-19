@@ -20,6 +20,7 @@ class PromptService:
             Path(__file__)
             .parent.parent
             / "prompts"
+            / "java"
         )
 
         self.generate_template = (

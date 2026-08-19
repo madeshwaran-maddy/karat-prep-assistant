@@ -917,7 +917,7 @@ def login(payload: CandidateLoginRequest):
         with engine.connect() as connection:
             row = connection.execute(
                 text(
-                    "SELECT id, name, email, password_hash, role FROM candidates WHERE email = :email"
+                    "SELECT id, name, email, password_hash, role, language_selected FROM candidates WHERE email = :email"
                 ),
                 {"email": email},
             ).fetchone()
@@ -936,6 +936,7 @@ def login(payload: CandidateLoginRequest):
                 "name": row[1],
                 "email": row[2],
                 "role": row[4],
+                "languageSelected": row[5] or "java",
             },
         }
 
@@ -943,6 +944,43 @@ def login(payload: CandidateLoginRequest):
         raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Login failed: {str(exc)}") from exc
+
+
+@app.get("/api/me")
+def get_current_candidate(request: Request):
+    candidate_token = (request.cookies.get("auth_token") or "").strip()
+    if not candidate_token.startswith("candidate-"):
+        raise HTTPException(status_code=401, detail="Candidate not logged in.")
+
+    candidate_id = candidate_token.replace("candidate-", "", 1)
+
+    try:
+        with engine.connect() as connection:
+            row = connection.execute(
+                text(
+                    """
+                    SELECT id, name, email, role, language_selected
+                    FROM candidates
+                    WHERE id::text = :candidate_id
+                    """
+                ),
+                {"candidate_id": candidate_id},
+            ).mappings().first()
+
+        if not row:
+            raise HTTPException(status_code=404, detail="Candidate not found.")
+
+        return {
+            "id": str(row["id"]),
+            "name": row["name"],
+            "email": row["email"],
+            "role": row["role"] or "candidate",
+            "languageSelected": row["language_selected"] or "java",
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to load current candidate: {str(exc)}") from exc
 
 
 @app.post("/api/assessments/start-debugging-drill")
@@ -1009,7 +1047,7 @@ def start_debugging_drill(request: Request):
 
 
 @app.post("/api/assessments/start-exercise-question")
-def start_exercise_question(request: Request):
+def start_exercise_question(request: Request, language: str = "java"):
     candidate_token = (request.cookies.get("auth_token") or "").strip()
     if not candidate_token or not candidate_token.startswith("candidate-"):
         raise HTTPException(status_code=401, detail="Candidate not logged in.")
@@ -1066,7 +1104,7 @@ def start_exercise_question(request: Request):
                 },
             )
 
-        question = get_random_exercise_question()
+        question = get_random_exercise_question(language)
         question_topic = question.get("title") or question.get("topic") or "Exercise Question"
 
         with engine.begin() as connection:

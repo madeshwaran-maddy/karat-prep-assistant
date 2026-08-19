@@ -13,6 +13,7 @@ export function loadExerciseQuestions(): ExerciseQuestion[] {
     "round-2-learning",
     "exercise-question",
     "questions",
+    "java",
     "exercise-questions.xlsx"
   );
 

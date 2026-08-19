@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AppHeader } from "@/components/AppHeader";
+import { CandidateLanguageProvider } from "@/components/CandidateLanguageProvider";
 
 const navItems = [
   { label: "Dashboard", href: "/candidate-dashboard", icon: "🏠" },
@@ -43,6 +44,7 @@ export default function CandidateDashboardLayout({ children }: { children: React
 
   if (hideSidebar) {
     return (
+      <CandidateLanguageProvider>
       <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto min-h-[calc(100vh-3rem)] max-w-7xl overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-sm shadow-slate-200/70">
           <div className="p-6 sm:p-8">
@@ -51,10 +53,12 @@ export default function CandidateDashboardLayout({ children }: { children: React
           </div>
         </div>
       </div>
+      </CandidateLanguageProvider>
     );
   }
 
   return (
+    <CandidateLanguageProvider>
     <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto min-h-[calc(100vh-3rem)] max-w-7xl overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-sm shadow-slate-200/70">
         <div className="p-6 sm:p-8">
@@ -93,5 +97,6 @@ export default function CandidateDashboardLayout({ children }: { children: React
         </div>
       </div>
     </div>
+    </CandidateLanguageProvider>
   );
 }

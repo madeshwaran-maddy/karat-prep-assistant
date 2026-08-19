@@ -2,11 +2,19 @@ import random
 from pathlib import Path
 
 import pandas as pd
+try:
+    from config.languages import get_language
+except ModuleNotFoundError:
+    from backend.config.languages import get_language
 
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
-MOCK_ROUND2_EXCEL_FILE = BACKEND_DIR / "mock_assessment" / "data" / "round2_questions.xlsx"
-EXERCISE_QUESTION_FILE = BACKEND_DIR / "exercise-question" / "exercise-questions.xlsx"
+def _language_directory(language_id: str) -> str:
+    return get_language(language_id)["id"]
+
+
+MOCK_ROUND2_EXCEL_FILE = BACKEND_DIR / "mock_assessment" / "data" / "java" / "round2_questions.xlsx"
+EXERCISE_QUESTION_FILE = BACKEND_DIR / "exercise-question" / "java" / "exercise-questions.xlsx"
 
 
 def _get_random_question_from_excel(file_path: Path):
@@ -72,9 +80,11 @@ def _get_random_question_from_excel(file_path: Path):
 EXCEL_FILE = MOCK_ROUND2_EXCEL_FILE
 
 
-def get_random_round2_question():
-    return _get_random_question_from_excel(MOCK_ROUND2_EXCEL_FILE)
+def get_random_round2_question(language_id: str = "java"):
+    file_path = BACKEND_DIR / "mock_assessment" / "data" / _language_directory(language_id) / "round2_questions.xlsx"
+    return _get_random_question_from_excel(file_path)
 
 
-def get_random_exercise_question():
-    return _get_random_question_from_excel(EXERCISE_QUESTION_FILE)
+def get_random_exercise_question(language_id: str = "java"):
+    file_path = BACKEND_DIR / "exercise-question" / _language_directory(language_id) / "exercise-questions.xlsx"
+    return _get_random_question_from_excel(file_path)

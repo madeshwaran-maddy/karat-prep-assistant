@@ -13,7 +13,7 @@ Route:
 The Format tab is loaded from:
 
 ```text
-public/format-practice-question/format.json
+public/format-practice-question/java/format.json
 ```
 
 The JSON can contain any number of `details` and any number of `sections`.
@@ -59,7 +59,7 @@ You can add/remove details without changing the React component.
 Questions are loaded from:
 
 ```text
-public/format-practice-question/questions.xlsx
+public/format-practice-question/java/questions.xlsx
 ```
 
 The first Excel row is the header and is excluded automatically. Every subsequent non-empty row creates one question in the left pane.

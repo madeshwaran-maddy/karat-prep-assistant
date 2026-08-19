@@ -22,6 +22,7 @@ export interface DrillJson {
 
 export interface GenerateRequest {
   id: string;
+  language?: string;
 }
 
 export interface GenerateResponse {

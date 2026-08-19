@@ -4,12 +4,14 @@ import { useEffect, useRef, useState } from "react";
 
 import ExerciseQuestions from "./components/ExerciseQuestions";
 import { ExerciseQuestion } from "./lib/questionTypes";
+import { useCandidateLanguage } from "../../../../components/CandidateLanguageProvider";
 
 export default function ExerciseQuestionsPage() {
   const [question, setQuestion] = useState<ExerciseQuestion | null>(null);
   const [questions, setQuestions] = useState<ExerciseQuestion[]>([]);
   const [error, setError] = useState("");
   const hasLoadedRef = useRef(false);
+  const { language } = useCandidateLanguage();
 
   useEffect(() => {
     if (hasLoadedRef.current) {
@@ -20,7 +22,7 @@ export default function ExerciseQuestionsPage() {
 
     const loadQuestion = async () => {
       try {
-        const response = await fetch("http://localhost:8000/api/assessments/start-exercise-question", {
+        const response = await fetch(`http://localhost:8000/api/assessments/start-exercise-question?language=${language.id}`, {
           method: "POST",
           credentials: "include",
         });
@@ -48,7 +50,7 @@ export default function ExerciseQuestionsPage() {
     };
 
     void loadQuestion();
-  }, []);
+  }, [language.id]);
 
   if (error) {
     return <div className="p-8 text-red-600">{error}</div>;

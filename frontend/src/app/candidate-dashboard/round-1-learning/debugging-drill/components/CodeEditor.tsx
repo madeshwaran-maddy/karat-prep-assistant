@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import Editor, { Editor as MonacoEditor, OnMount } from "@monaco-editor/react";
+import Editor, { loader, OnMount } from "@monaco-editor/react";
+import type { editor } from "monaco-editor";
+import { useCandidateLanguage } from "../../../../../components/CandidateLanguageProvider";
+
+loader.config({
+  paths: {
+    vs: "/monaco/vs",
+  },
+});
 
 interface CodeEditorProps {
   code?: string;
@@ -13,12 +21,14 @@ interface CodeEditorProps {
 
 export default function CodeEditor({
   code = "",
-  language = "java",
+  language,
   readOnly = false,
   loading = false,
   onChange,
 }: CodeEditorProps) {
-  const editorRef = useRef<MonacoEditor | null>(null);
+  const { language: candidateLanguage } = useCandidateLanguage();
+  const editorLanguage = language || candidateLanguage.monacoLanguage;
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<unknown>(null);
 
   const handleMount: OnMount = (editor, monaco) => {
@@ -40,7 +50,6 @@ export default function CodeEditor({
       wordWrap: "on",
       formatOnPaste: true,
       formatOnType: true,
-      scrollSensitivity: 2,
       scrollbar: {
         vertical: "visible",
         horizontal: "visible",
@@ -66,7 +75,7 @@ export default function CodeEditor({
       <div className="editor-toolbar">
 
         <span className="editor-title">
-          Java Editor
+          {candidateLanguage.name} Editor
         </span>
 
         {loading && (
@@ -81,7 +90,7 @@ export default function CodeEditor({
 
         <Editor
           height="100%"
-          defaultLanguage={language}
+          defaultLanguage={editorLanguage}
           value={code}
           onMount={handleMount}
           onChange={handleChange}

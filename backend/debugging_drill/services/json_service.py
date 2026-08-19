@@ -15,6 +15,7 @@ class JsonService:
             Path(__file__)
             .parent.parent
             / "data"
+            / "java"
             / "drills.json"
         )
 

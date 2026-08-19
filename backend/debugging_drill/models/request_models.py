@@ -11,6 +11,11 @@ class GenerateRequest(BaseModel):
         description="Unique drill id"
     )
 
+    language: str = Field(
+        default="java",
+        description="Content language identifier",
+    )
+
 
 class EvaluateRequest(BaseModel):
     """

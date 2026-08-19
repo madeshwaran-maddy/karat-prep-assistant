@@ -1,0 +1,24 @@
+{
+  "languages": [
+    {
+      "id": "java",
+      "name": "Java",
+      "monacoLanguage": "java",
+      "syntaxLanguage": "java",
+      "fileExtension": "java",
+      "judge0LanguageId": 5,
+      "judge0URL":"https://extra-ce.judge0.com",
+      "enabled": true
+    },
+    {
+      "id": "node",
+      "name": "Node.js",
+      "monacoLanguage": "javascript",
+      "syntaxLanguage": "javascript",
+      "fileExtension": "js",
+      "judge0LanguageId": 97,
+      "judge0URL": "https://ce.judge0.com",
+      "enabled": true
+    }
+  ]
+}

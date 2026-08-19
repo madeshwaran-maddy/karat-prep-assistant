@@ -20,6 +20,10 @@ from debugging_drill.services.json_service import JsonService
 from debugging_drill.services.prompt_service import PromptService
 from debugging_drill.services.ollama_service import OllamaService
 from debugging_drill.services.evaluation_service import EvaluationService
+try:
+    from config.languages import get_language
+except ModuleNotFoundError:
+    from backend.config.languages import get_language
 
 
 router = APIRouter(
@@ -179,6 +183,11 @@ def generate_question(
     """
     Generate one debugging question and persist it to the questions table.
     """
+    try:
+        get_language(request.language)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     ensure_question_table()
 
     candidate_token = (http_request.cookies.get("auth_token") or "").strip()

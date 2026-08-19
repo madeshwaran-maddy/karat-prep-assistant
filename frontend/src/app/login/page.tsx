@@ -36,6 +36,7 @@ export default function LoginPage() {
       document.cookie = `auth_token=${token}; path=/; SameSite=Lax;`;
       document.cookie = `user_role=${user.role}; path=/; SameSite=Lax;`;
       document.cookie = `user_name=${encodeURIComponent(user.name)}; path=/; SameSite=Lax;`;
+      document.cookie = `language_selected=${encodeURIComponent(user.languageSelected || "java")}; path=/; SameSite=Lax;`;
 
       setError("");
       router.push("/dashboard");

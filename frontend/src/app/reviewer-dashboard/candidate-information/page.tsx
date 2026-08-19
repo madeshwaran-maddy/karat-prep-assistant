@@ -202,7 +202,7 @@ export default function CandidateInformationPage() {
               <select name="language_selected" defaultValue={candidate.languageSelected || ""}>
                 <option value="">Select a language</option>
                 <option value="Java">Java</option>
-                <option value="Node.js">Node.js</option>
+                <option value="Node">Node</option>
               </select>
             </label>
 

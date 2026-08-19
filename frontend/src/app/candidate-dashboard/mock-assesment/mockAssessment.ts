@@ -1,4 +1,5 @@
 export interface Round1Question {
+  language: string;
   questionNo: number;
   topic: string;
   description: string;
@@ -9,6 +10,7 @@ export interface Round1Question {
 }
 
 export interface Round2Question {
+  language: string;
   questionNo: number;
   title: string;
   code: string;
@@ -20,6 +22,7 @@ export type AssessmentQuestion = Round1Question | Round2Question;
 
 export interface AssessmentData {
   assessmentId: string;
+  language: string;
   round1Questions: Round1Question[];
   round2Question: Round2Question;
 }

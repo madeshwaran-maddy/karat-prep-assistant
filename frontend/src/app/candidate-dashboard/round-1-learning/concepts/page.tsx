@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 
-import data from "./data/concepts.json";
+import javaData from "./data/java/concepts.json";
+import { useCandidateLanguage } from "@/components/CandidateLanguageProvider";
 
 import ConceptContent from "./components/ConceptContent";
 import ConceptsSidebar from "./components/ConceptsSidebar";
@@ -12,6 +13,11 @@ import { useConceptProgress } from "./useConceptProgress";
 import styles from "./concepts.module.css";
 
 export default function ConceptsPage() {
+  const { language } = useCandidateLanguage();
+  const hasConceptContent = language.id === "java";
+  const data = hasConceptContent
+    ? javaData
+    : { collections: [], exceptions: [], multithreading: [] };
   const sectionTitleMap: Record<string, string> = {
     collections: "Collections",
     exceptions: "Exception Handling",
@@ -32,7 +38,7 @@ export default function ConceptsPage() {
 
   const concepts = sections.flatMap((section) => section.concepts);
 
-  const [selected, setSelected] = useState(concepts[0].id);
+  const [selected, setSelected] = useState(concepts[0]?.id ?? "");
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isCompletingConcept, setIsCompletingConcept] = useState(false);
 
@@ -78,8 +84,8 @@ export default function ConceptsPage() {
     }
 
     // Default to first concept if all are completed
-    setSelected(concepts[0].id);
-  }, [progress, loading]);
+    setSelected(concepts[0]?.id ?? "");
+  }, [progress, loading, concepts]);
 
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const previousConceptRef = useRef<string>(selected);
@@ -88,6 +94,8 @@ export default function ConceptsPage() {
 
   // Handle concept selection with progress tracking
   useEffect(() => {
+    if (!hasConceptContent || !selected) return;
+
     const previousConcept = previousConceptRef.current;
 
     // Save progress for previous concept if time was spent
@@ -117,7 +125,7 @@ export default function ConceptsPage() {
         clearInterval(timerIntervalRef.current);
       }
     };
-  }, [selected]); // Only depend on selected concept
+  }, [hasConceptContent, selected]); // Only depend on selected concept
 
   // Save progress before page unload
   useEffect(() => {
@@ -173,6 +181,14 @@ export default function ConceptsPage() {
 
   const currentConceptProgress = progress[selected];
   const isConceptCompleted = currentConceptProgress?.status === "completed";
+
+  if (!hasConceptContent) {
+    return (
+      <div className="flex min-h-96 items-center justify-center p-8 text-center text-slate-600">
+        {language.name} concept content is not available yet.
+      </div>
+    );
+  }
 
   return (
     <div className={`flex flex-col gap-5 px-6 ${styles.layoutWrapper}`}>

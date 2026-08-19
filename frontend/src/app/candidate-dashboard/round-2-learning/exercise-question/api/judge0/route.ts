@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+import languages from "../../../../../../config/languages.json";
+
+const javaLanguage = languages.languages.find(
+  (language) => language.id === "java" && language.enabled
+);
 
 const JUDGE0_URL =
   process.env.JUDGE0_URL ||
-  "https://extra-ce.judge0.com";
+  javaLanguage?.judge0URL;
+
+if (!JUDGE0_URL) {
+  throw new Error("Enabled Java language is missing judge0URL in languages.json");
+}
 
 export async function POST(
   request: NextRequest
@@ -13,7 +22,7 @@ export async function POST(
 
     const {
       sourceCode,
-      languageId = 5,
+      languageId = javaLanguage?.judge0LanguageId,
       stdin = "",
     } = body;
 

@@ -1,4 +1,4 @@
-import practiceData from "../data/practice-questions.json";
+import javaPracticeData from "../data/java/practice-questions.json";
 import { PracticeData, Topic } from "../types/practice";
 import { FlatTopic } from "../types/practice";
 
@@ -13,7 +13,7 @@ class PracticeQuestionService {
 
     // JSON module imports widen string literals. The content validation step
     // restricts every authored difficulty to Easy, Medium, or Hard.
-    private data: PracticeData = practiceData as unknown as PracticeData;
+    private data: PracticeData = javaPracticeData as unknown as PracticeData;
 
     getData() {
         return this.data;

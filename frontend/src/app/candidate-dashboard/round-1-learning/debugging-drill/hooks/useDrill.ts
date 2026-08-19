@@ -15,8 +15,10 @@ import {
 } from "../types/drill";
 
 import { useDrillStore } from "../store/drillStore";
+import { useCandidateLanguage } from "../../../../../components/CandidateLanguageProvider";
 
 export function useDrill() {
+  const { language } = useCandidateLanguage();
   const {
     collections,
     selectedDrill,
@@ -45,6 +47,7 @@ export function useDrill() {
   const topicQuestionCountsRef = useRef<Record<string, number>>({});
   const [questionProgress, setQuestionProgress] = useState({ topicId: "", count: 0 });
   const [submittedQuestionIds, setSubmittedQuestionIds] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [secondsRemaining, setSecondsRemaining] = useState(4 * 60);
   const submitSolutionRef = useRef<((autoSubmit?: boolean) => Promise<void>) | null>(null);
   const submittingQuestionRef = useRef<string | null>(null);
@@ -82,6 +85,7 @@ export function useDrill() {
 
       try {
         setLoading(true);
+        setError(null);
         setGeneratedQuestion(null);
         setEditorCode("");
         // clear candidate analysis when a new question is generated
@@ -89,6 +93,7 @@ export function useDrill() {
 
         const response: GenerateResponse = await generateQuestion({
           id: currentDrill.id,
+          language: language.id,
         });
 
         setGeneratedQuestion(response);
@@ -99,6 +104,7 @@ export function useDrill() {
         setQuestionProgress({ topicId, count: nextCount });
       } catch (error) {
         console.error("Generation failed", error);
+        setError(error instanceof Error ? error.message : "Unable to generate a debugging question.");
       } finally {
         if (activeGenerationRef.current === requestKey) {
           activeGenerationRef.current = null;
@@ -106,13 +112,14 @@ export function useDrill() {
         setLoading(false);
       }
     },
-    [selectedDrill, setLoading, setGeneratedQuestion, setEditorCode, setAnalysisText]
+    [selectedDrill, language.id, setLoading, setGeneratedQuestion, setEditorCode, setAnalysisText]
   );
 
   const initializeDrills = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await loadDrills();
+      setError(null);
+      const data = await loadDrills(language.id);
       setCollections(data);
 
       const firstCategory = Object.keys(data)[0];
@@ -125,10 +132,11 @@ export function useDrill() {
       }
     } catch (error) {
       console.error("Failed loading drills", error);
+      setError(error instanceof Error ? error.message : "Unable to load debugging drills.");
     } finally {
       setLoading(false);
     }
-  }, [setCollections, setSelectedDrill, setLoading, generate]);
+  }, [language.id, setCollections, setSelectedDrill, setLoading, generate]);
 
   const selectDrill = useCallback(
     async (drill: Drill) => {
@@ -275,6 +283,7 @@ export function useDrill() {
     generatedQuestion,
     editorCode,
     analysisText,
+    error,
     evaluation,
     loading,
     evaluating,

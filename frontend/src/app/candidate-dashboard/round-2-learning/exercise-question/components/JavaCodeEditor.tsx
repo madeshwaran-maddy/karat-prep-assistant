@@ -1,11 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Editor from "@monaco-editor/react";
+import Editor, { loader } from "@monaco-editor/react";
+
+loader.config({
+  paths: {
+    vs: "/monaco/vs",
+  },
+});
 import { useRouter } from "next/navigation";
 
 import { ExerciseQuestion } from "../lib/questionTypes";
 import ExecutionResult from "./ExecutionResult";
+import { useCandidateLanguage } from "../../../../../components/CandidateLanguageProvider";
 
 interface Props {
   question: ExerciseQuestion;
@@ -14,6 +21,7 @@ interface Props {
 export default function JavaCodeEditor({
   question,
 }: Props) {
+  const { language } = useCandidateLanguage();
   const router = useRouter();
   const [code, setCode] = useState(
     question.code
@@ -130,7 +138,7 @@ export default function JavaCodeEditor({
 
           body: JSON.stringify({
             sourceCode: code,
-            languageId: 5,
+            languageId: language.judge0LanguageId,
             stdin: "",
           }),
         }

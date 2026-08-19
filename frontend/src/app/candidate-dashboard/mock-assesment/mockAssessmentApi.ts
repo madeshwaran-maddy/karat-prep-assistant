@@ -3,10 +3,10 @@ import { AssessmentData } from "./mockAssessment";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000";
 
-export async function fetchAssessment(): Promise<AssessmentData> {
+export async function fetchAssessment(language = "java"): Promise<AssessmentData> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/mock-assessment/questions`,
+      `${API_BASE_URL}/api/mock-assessment/questions?language=${language}`,
       {
         cache: "no-store",
         credentials: "include",

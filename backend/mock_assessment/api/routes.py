@@ -1,7 +1,7 @@
 import os
 import uuid
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import create_engine, text
 
@@ -13,6 +13,10 @@ from ..services.assessment_service import (
 )
 from ..services.evaluation_service import build_evaluation_submission
 from ..services.excel_service import get_random_round2_question
+try:
+    from config.languages import get_language
+except ModuleNotFoundError:
+    from backend.config.languages import get_language
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
@@ -32,7 +36,14 @@ ASSESSMENTS = {}
 
 
 @router.get("/questions", response_model=AssessmentResponse)
-async def get_mock_assessment_questions(request: Request):
+async def get_mock_assessment_questions(
+    request: Request,
+    language: str = Query("java"),
+):
+    try:
+        get_language(language)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     candidate_token = (request.cookies.get("auth_token") or "").strip()
     if not candidate_token or not candidate_token.startswith("candidate-"):
         raise HTTPException(status_code=401, detail="Candidate not logged in.")
@@ -90,7 +101,7 @@ async def get_mock_assessment_questions(request: Request):
             )
 
         print("→ Generating Round 1 questions from Ollama...")
-        round1 = await generate_round1_questions(4)
+        round1 = await generate_round1_questions(4, language_id=language)
         print(f"✓ Successfully generated {len(round1)} Round 1 questions")
 
         with engine.begin() as connection:
@@ -149,7 +160,8 @@ async def get_mock_assessment_questions(request: Request):
                 )
 
         print("→ Loading Round 2 question from Excel...")
-        round2 = get_random_round2_question()
+        round2 = get_random_round2_question(language)
+        round2["language"] = language
         print("✓ Successfully loaded Round 2 question")
 
         with engine.begin() as connection:
@@ -226,6 +238,7 @@ async def get_mock_assessment_questions(request: Request):
 
         response = {
             "assessmentId": assessment_id,
+            "language": language,
             "round1Questions": public_round1,
             "round2Question": round2,
         }

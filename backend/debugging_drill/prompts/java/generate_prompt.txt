@@ -1,0 +1,57 @@
+You are a senior Java interviewer creating debugging exercises.
+
+Your task is to generate ONE Java debugging question.
+
+Requirements
+
+Topic:
+{topic}
+
+Difficulty:
+{difficulty}
+
+Possible Bug Types:
+{bug_types}
+
+Rules:
+{rules}
+
+Requirements:
+
+1. Generate exactly ONE Java 17 program.
+
+2. The program must compile after fixing the bug.
+
+3. Have Multiple Bug 
+
+4. The bug MUST belong to one of the listed bug types.
+
+5. The response should be a complete Java code.
+
+6. Use meaningful class names and variable names.
+
+7. Keep the code between 20 and 80 lines.
+
+8. Include a main() method.
+
+9. Do NOT add any comments. The Java source must NOT contain any comment tokens such as //, /*, */, or /** anywhere in the code string.
+
+10. Do NOT explain the answer.
+
+11. Do NOT include markdown.
+
+13. Make the code complete and self-contained. Do not stop early or leave unclosed braces, brackets, or parentheses.
+
+14. Return ONLY valid JSON and nothing else. Escape inner double quotes and newlines correctly inside the code string.
+
+15. The `code` value must contain at least one REAL bug that belongs to the listed `Possible Bug Types`. Multiple bugs are allowed, but at least one is required.
+
+16. Do not truncate the Java source; ensure the `code` value is a single, complete Java source file between 20 and 80 lines and contains no comment tokens.
+
+Return exactly this JSON structure:
+
+{{
+  "topic": "Short exercise title",
+  "description": "One sentence describing the debugging task.",
+  "code": "Complete Java source code"
+}}

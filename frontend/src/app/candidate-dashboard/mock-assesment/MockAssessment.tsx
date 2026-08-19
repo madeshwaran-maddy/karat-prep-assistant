@@ -10,6 +10,7 @@ import {
   AssessmentQuestion,
 } from "./mockAssessment";
 import { getNextQuestion } from "./assessmentHelpers";
+import { useCandidateLanguage } from "../../../components/CandidateLanguageProvider";
 
 export default function MockAssessment() {
   const hasLoadedRef = useRef(false);
@@ -22,6 +23,7 @@ export default function MockAssessment() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { language } = useCandidateLanguage();
 
   useEffect(() => {
     if (hasLoadedRef.current) {
@@ -32,7 +34,7 @@ export default function MockAssessment() {
 
     async function loadAssessment() {
       try {
-        const data = await fetchAssessment();
+        const data = await fetchAssessment(language.id);
 
         setAssessment(data);
 
@@ -51,7 +53,7 @@ export default function MockAssessment() {
     }
 
     loadAssessment();
-  }, []);
+  }, [language.id]);
 
   const questions = useMemo(() => {
     if (!assessment) {
