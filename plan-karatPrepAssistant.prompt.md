@@ -147,6 +147,29 @@ CREATE TABLE practice_question_progress (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
+INSERT INTO INSERT INTO learning_overview
+    (round_no, screen, topic, subtopic, question_no)
+VALUES
+    (2, 'Format and Practice Question', 'Format', '', NULL),
+    (2, 'Format and Practice Question', 'Question 1', 'Library Book Lending', NULL),
+	(2, 'Format and Practice Question', 'Question 2', 'Employee Salary Management', NULL),
+	(2, 'Format and Practice Question', 'Question 3', 'Inventory Stock Tracking', NULL),
+	(2, 'Format and Practice Question', 'Question 4', 'Student Grade Analytics', 'Question 4', NULL),
+	(2, 'Format and Practice Question', 'Question 5', 'Order Processing and Revenue', 'Question 5', NULL),
+	(2, 'Format and Practice Question', 'Question 6', 'Coding debugging question with Java code, answer and explanation.', NULL);
+
+
+    (round_no, screen, topic, subtopic, question_no)
+VALUES
+    (2, 'Format and Practice Question', 'Format', '', NULL),
+    (2, 'Format and Practice Question', 'Question 1', 'Library Book Lending', NULL),
+	(2, 'Format and Practice Question', 'Question 2', 'Employee Salary Management', NULL),
+	(2, 'Format and Practice Question', 'Question 3', 'Inventory Stock Tracking', NULL),
+	(2, 'Format and Practice Question', 'Question 4', 'Student Grade Analytics' , NULL),
+	(2, 'Format and Practice Question', 'Question 5', 'Order Processing and Revenue', NULL),
+	(2, 'Format and Practice Question', 'Question 6', 'Coding debugging question with Java code, answer and explanation.', NULL);
+
+
 
 ```
 

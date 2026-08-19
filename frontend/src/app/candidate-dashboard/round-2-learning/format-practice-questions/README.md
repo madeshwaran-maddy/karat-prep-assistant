@@ -70,4 +70,6 @@ The first Excel row is the header and is excluded automatically. Every subsequen
 npm install xlsx
 ```
 
-No backend API is required for this screen.
+Progress is tracked through the backend practice-question API. The format is stored as
+`round2 / format / 0`, and each Excel question is stored as
+`round2 / format-practice-questions / questionNo`.

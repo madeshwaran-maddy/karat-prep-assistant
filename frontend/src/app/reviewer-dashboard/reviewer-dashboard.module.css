@@ -594,6 +594,123 @@
   font-weight: 700;
 }
 
+.learningHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 26px;
+}
+
+.learningHeader h1 {
+  margin: 2px 0 0;
+  color: #213047;
+  font-size: 26px;
+  letter-spacing: -0.4px;
+}
+
+.eyebrow {
+  color: #778398;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.profileChip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #596579;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.profileAvatar {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  color: #5e6681;
+  background: #ececf7;
+}
+
+.progressCards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 15px;
+  margin-bottom: 18px;
+}
+
+.progressCard {
+  position: relative;
+  min-height: 218px;
+  overflow: hidden;
+  border: 1px solid #dfe3ea;
+  border-radius: 10px;
+  padding: 17px 17px 0;
+  background: #fff;
+  box-shadow: 0 2px 7px rgba(30, 45, 70, 0.03);
+}
+
+.progressCard::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  content: "";
+  background: #347dbd;
+}
+
+.progressCard.green::before { background: #4f9a5b; }
+.progressCard.violet::before { background: #7e6db6; }
+
+.cardTitle { display: flex; align-items: center; gap: 9px; color: #35506a; font-size: 12px; font-weight: 800; }
+.cardIcon { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 50%; color: #347dbd; background: #e5f0f8; }
+.green .cardIcon { color: #4f9a5b; background: #e7f3e6; }
+.violet .cardIcon { color: #7e6db6; background: #eeebf7; }
+.cardRound { margin-top: 7px; margin-left: 40px; color: #778398; font-size: 9px; font-weight: 800; }
+.cardBody { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 12px 0 10px; }
+.progressRing { display: grid; width: 86px; height: 86px; place-items: center; border-radius: 50%; background: conic-gradient(#347dbd var(--progress), #e8edf2 0); }
+.green .progressRing { background: conic-gradient(#4f9a5b var(--progress), #e8edf2 0); }
+.violet .progressRing { background: conic-gradient(#7e6db6 var(--progress), #e8edf2 0); }
+.progressRing::after { grid-column: 1; grid-row: 1; width: 68px; height: 68px; border-radius: 50%; background: #fff; content: ""; }
+.progressRing strong, .progressRing span { z-index: 1; grid-column: 1; grid-row: 1; }
+.progressRing strong { margin-top: -4px; color: #1e2a3c; font-size: 17px; }
+.progressRing span { margin-top: 27px; color: #6f7b8c; font-size: 8px; }
+.metricCount { display: flex; flex-direction: column; gap: 5px; }
+.metricCount strong { color: #25364a; font-size: 15px; }
+.metricCount span { max-width: 84px; color: #667285; font-size: 10px; line-height: 1.25; }
+.detailsButton { display: flex; width: calc(100% + 34px); align-items: center; justify-content: center; gap: 5px; margin-left: -17px; padding: 11px; border: 0; border-top: 1px solid #edf0f4; color: #46647d; background: #fafbfd; font-size: 10px; font-weight: 800; cursor: pointer; }
+
+.progressDetails { border: 1px solid #dfe3ea; border-radius: 10px; padding: 16px; background: #fff; }
+.detailsHeader { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.detailsHeader h2 { margin: 3px 0 0; color: #26364b; font-size: 14px; }
+.backButton { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #dfe3ea; border-radius: 5px; padding: 7px 10px; color: #526176; background: #fff; font-size: 10px; font-weight: 700; text-decoration: none; }
+.detailColumns { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.topicColumn { overflow: hidden; border: 1px solid #e0e4ea; border-radius: 7px; }
+.topicColumn.completed { border-top: 3px solid #4f9a5b; }
+.topicColumn.pending { border-top: 3px solid #c77878; }
+.topicColumnHeader { display: flex; width: 100%; align-items: center; gap: 8px; padding: 11px 12px; border: 0; color: #344258; background: #fbfcfd; text-align: left; cursor: pointer; }
+.topicColumnHeader > span:nth-child(2) { display: flex; flex: 1; align-items: center; justify-content: space-between; }
+.topicColumnHeader strong { font-size: 13px; }
+.topicColumnHeader small { color: #6c7889; font-size: 11px; }
+.statusDot { display: grid; width: 16px; height: 16px; place-items: center; border-radius: 50%; color: #fff; background: #4f9a5b; }
+.pending .statusDot { color: #a85f65; background: #faecec; }
+.topicList { max-height: 430px; overflow-y: auto; padding: 4px 12px 9px; }
+.topicGroup { border-bottom: 1px solid #edf0f3; }
+.topicGroup:last-child { border-bottom: 0; }
+.topicGroup summary { display: flex; align-items: center; justify-content: space-between; padding: 9px 0 6px; color: #405269; font-size: 12px; cursor: pointer; list-style: none; }
+.topicGroup summary::-webkit-details-marker { display: none; }
+.topicGroup summary span { display: flex; gap: 4px; }
+.topicGroup summary em { color: #718093; font-style: normal; }
+.topicGroup ul { display: grid; gap: 4px; margin: 0 0 8px; padding: 0; list-style: none; }
+.topicGroup li { display: flex; align-items: center; gap: 7px; color: #687589; font-size: 11px; }
+.itemComplete, .itemPending { display: grid; width: 12px; height: 12px; place-items: center; border: 1px solid #83bd8b; border-radius: 50%; color: #fff; background: #56a263; }
+.itemPending { border-color: #c78b8e; background: #fff; }
+.learningFooter { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 2px 0; color: #7b8797; font-size: 10px; }
+.learningFooter a { display: inline-flex; align-items: center; gap: 5px; color: #48657f; font-weight: 700; text-decoration: none; }
+
 @media (max-width: 1000px) {
   .workspace {
     grid-template-columns: 230px 1fr;
@@ -625,6 +742,8 @@
   .candidateSummary {
     grid-template-columns: 1fr 1fr;
   }
+
+  .progressCards { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 720px) {
@@ -681,4 +800,9 @@
   .editSearch label {
     grid-column: auto;
   }
+
+  .learningHeader,
+  .detailsHeader,
+  .learningFooter { align-items: flex-start; flex-direction: column; }
+  .detailColumns { grid-template-columns: 1fr; }
 }

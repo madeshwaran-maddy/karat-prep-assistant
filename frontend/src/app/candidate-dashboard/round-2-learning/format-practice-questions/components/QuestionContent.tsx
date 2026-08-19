@@ -8,6 +8,9 @@ type Props = {
   total: number;
   onPrevious: () => void;
   onNext: () => void;
+  completed: boolean;
+  completing: boolean;
+  onComplete: () => void;
 };
 
 export default function QuestionContent({
@@ -16,17 +19,30 @@ export default function QuestionContent({
   total,
   onPrevious,
   onNext,
+  completed,
+  completing,
+  onComplete,
 }: Props) {
   const title = `Question ${question.questionNo || currentIndex + 1}`;
 
   return (
     <article className={styles.fpqCard}>
-      <div className={styles.fpqQuestionHeading}>
-        <h2>{title}</h2>
-        <p>
-          {question.title ||
-            "Coding debugging question with Java code, answer and explanation."}
-        </p>
+      <div className={styles.fpqHeadingRow}>
+        <div className={styles.fpqQuestionHeading}>
+          <h2>{title}</h2>
+          <p>
+            {question.title ||
+              "Coding debugging question with Java code, answer and explanation."}
+          </p>
+        </div>
+        <button
+          type="button"
+          className={`${styles.fpqNavButton} ${styles.complete}`}
+          onClick={onComplete}
+          disabled={completed || completing}
+        >
+          {completed ? "Completed" : completing ? "Saving..." : "Mark as Completed"}
+        </button>
       </div>
 
       <div className={styles.fpqDivider} />

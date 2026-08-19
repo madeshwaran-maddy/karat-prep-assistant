@@ -59,6 +59,7 @@ def ensure_schema():
                     name VARCHAR(255) NOT NULL,
                     email VARCHAR(255) UNIQUE NOT NULL,
                     phone VARCHAR(20),
+                    language_selected VARCHAR(255),
                     password_hash VARCHAR(255),
                     status VARCHAR(50),
                     role VARCHAR(50),
@@ -69,6 +70,15 @@ def ensure_schema():
                     created_at TIMESTAMP DEFAULT NOW(),
                     updated_at TIMESTAMP DEFAULT NOW()
                 )
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                ALTER TABLE candidates
+                ADD COLUMN IF NOT EXISTS language_selected VARCHAR(255)
                 """
             )
         )
@@ -339,6 +349,7 @@ class CandidateUpdateRequest(BaseModel):
     name: str = Field(..., min_length=2)
     email: str = Field(..., min_length=3)
     phone: str | None = None
+    language_selected: str | None = None
     lead_name: str | None = None
     status: str | None = None
     role: str | None = None
@@ -425,6 +436,7 @@ def get_reviewer_candidates():
                     c.name,
                     c.email,
                     c.phone,
+                      c.language_selected,
                     c.created_at,
                     c.start_date,
                     c.karat_prep_timeline,
@@ -437,7 +449,7 @@ def get_reviewer_candidates():
                     COALESCE(SUM(CASE WHEN a.round = 3 THEN 1 ELSE 0 END), 0) AS mock_attempts
                 FROM candidates c
                 LEFT JOIN assessments a ON a.candidate_id = c.id
-                GROUP BY c.id, c.name, c.email, c.phone, c.created_at, c.start_date, c.karat_prep_timeline, c.karat_assessment_date, c.role, c.lead_name, c.status
+                GROUP BY c.id, c.name, c.email, c.phone, c.language_selected, c.created_at, c.start_date, c.karat_prep_timeline, c.karat_assessment_date, c.role, c.lead_name, c.status
                 ORDER BY c.created_at DESC
                 """
             )
@@ -452,6 +464,7 @@ def get_reviewer_candidates():
                 "name": row["name"],
                 "email": row["email"],
                 "phone": row["phone"],
+                 "languageSelected": row.get("language_selected") or "",
                 "startDate": format_date_value(start_date_value),
                 "karatAssessmentDate": format_date_value(row["karat_assessment_date"]),
                 "timeline": row["karat_prep_timeline"] or "",
@@ -479,6 +492,7 @@ def get_reviewer_candidate(candidate_id: str):
                     c.name,
                     c.email,
                     c.phone,
+                      c.language_selected,
                     c.created_at,
                     c.start_date,
                     c.karat_prep_timeline,
@@ -492,7 +506,7 @@ def get_reviewer_candidate(candidate_id: str):
                 FROM candidates c
                 LEFT JOIN assessments a ON a.candidate_id = c.id
                 WHERE c.id::text = :candidate_id
-                GROUP BY c.id, c.name, c.email, c.phone, c.created_at, c.start_date, c.karat_prep_timeline, c.karat_assessment_date, c.role, c.lead_name, c.status
+                GROUP BY c.id, c.name, c.email, c.phone, c.language_selected, c.created_at, c.start_date, c.karat_prep_timeline, c.karat_assessment_date, c.role, c.lead_name, c.status
                 """
             ),
             {"candidate_id": candidate_id},
@@ -586,6 +600,7 @@ def get_reviewer_candidate(candidate_id: str):
         "name": candidate_row["name"],
         "email": candidate_row["email"],
         "phone": candidate_row["phone"],
+        "languageSelected": candidate_row.get("language_selected") or "",
         "startDate": format_date_value(candidate_row["start_date"] or candidate_row["created_at"]),
         "karatAssessmentDate": format_date_value(candidate_row["karat_assessment_date"]),
         "timeline": candidate_row["karat_prep_timeline"] or "",
@@ -596,6 +611,156 @@ def get_reviewer_candidate(candidate_id: str):
         "round2Attempts": int(candidate_row["round2_attempts"] or 0),
         "totalMockAttempts": int(candidate_row["mock_attempts"] or 0),
         "attempts": attempts,
+    }
+
+
+def _overview_value(row, *names, default=None):
+    for name in names:
+        if name in row and row[name] is not None:
+            return row[name]
+    return default
+
+
+def _progress_topic_rows(overview_rows, progress_rows, kind):
+    progress_by_key = {}
+    for row in progress_rows:
+        if kind == "concept":
+            key = str(row["concept_id"])
+        elif kind == "round2_question":
+            key = int(row["question_no"])
+        else:
+            key = str(row["topic_id"])
+        if key not in progress_by_key or row["status"] == "completed":
+            progress_by_key[key] = row
+
+    grouped = {}
+    for row in overview_rows:
+        if kind == "concept":
+            item_key = str(_overview_value(
+                row, "concept_id", "subtopic", "content_id", "item_id", "slug", "key", "id",
+            ))
+            group_name = str(_overview_value(
+                row, "collection_name", "collection", "category", "topic_name", "topic", "name", "title",
+                default="Concepts",
+            ))
+            progress = progress_by_key.get(item_key)
+            item_name = str(_overview_value(
+                row, "concept_name", "content_name", "item_name", "subtopic", "name", "title", "concept_id", "content_id",
+                default=item_key,
+            ))
+        elif kind == "round2_question":
+            question_no = int(_overview_value(row, "question_no", "question_number", "questionNo", default=0))
+            item_key = question_no
+            group_name = str(_overview_value(row, "topic", "topic_name", default="Round 2 Practice Questions"))
+            progress = progress_by_key.get(item_key)
+            item_name = str(_overview_value(
+                row, "subtopic", "question_title", "question_name", "title", "name",
+                default=f"Question {question_no}",
+            ))
+        else:
+            topic_id = str(_overview_value(row, "subtopic", "topic_id", "topic", "topic_name", default=""))
+            group_name = str(_overview_value(row, "topic", "topic_name", "section", default="Practice Questions"))
+            item_key = topic_id
+            progress = progress_by_key.get(item_key)
+            item_name = topic_id or str(_overview_value(row, "question_title", "question_name", "title", "name", default="Practice Question"))
+
+        topic = grouped.setdefault(group_name, {"name": group_name, "items": []})
+        if any(item["name"] == item_name for item in topic["items"]):
+            continue
+        topic["items"].append({
+            "name": item_name,
+            "completed": bool(progress and progress["status"] == "completed"),
+        })
+
+    topics = []
+    for topic in grouped.values():
+        completed = sum(1 for item in topic["items"] if item["completed"])
+        topic["completed"] = completed
+        topic["total"] = len(topic["items"])
+        topics.append(topic)
+    return topics
+
+
+@app.get("/api/reviewer/candidates/{candidate_id}/learning-progress")
+def get_reviewer_learning_progress(candidate_id: str):
+    with engine.connect() as connection:
+        candidate_exists = connection.execute(
+            text("SELECT id FROM candidates WHERE id::text = :candidate_id"),
+            {"candidate_id": candidate_id},
+        ).fetchone()
+        if candidate_exists is None:
+            raise HTTPException(status_code=404, detail="Candidate not found.")
+
+        try:
+            overview_rows = connection.execute(
+                text("SELECT * FROM learning_content_overview ORDER BY round_no, screen"),
+            ).mappings().all()
+        except Exception as exc:
+            raise HTTPException(
+                status_code=503,
+                detail="learning_content_overview is unavailable. Configure the learning content table before opening this report.",
+            ) from exc
+
+        concept_rows = connection.execute(
+            text("""
+                SELECT concept_id, status
+                FROM concept_progress
+                WHERE candidate_id::text = :candidate_id
+            """),
+            {"candidate_id": candidate_id},
+        ).mappings().all()
+        question_rows = connection.execute(
+            text("""
+                SELECT section, topic_id, question_no, status
+                FROM practice_question_progress
+                WHERE candidate_id::text = :candidate_id
+            """),
+            {"candidate_id": candidate_id},
+        ).mappings().all()
+
+    round1_concept_rows = [
+        row for row in overview_rows
+        if int(row["round_no"]) == 1 and str(row["screen"]).lower() == "concepts"
+    ]
+    round1_question_rows = [
+        row for row in overview_rows
+        if int(row["round_no"]) == 1
+        and str(row["screen"]).lower() == "practice question"
+        and str(_overview_value(row, "section", default="")).lower() != "round2"
+    ]
+    round2_question_rows = [
+        row for row in overview_rows
+        if int(row["round_no"]) == 2
+    ]
+
+    concept_topics = _progress_topic_rows(round1_concept_rows, concept_rows, "concept")
+    round1_topics = _progress_topic_rows(round1_question_rows, question_rows, "question")
+    round2_progress_rows = [
+        row for row in question_rows
+        if str(row["section"]).lower() == "round2"
+    ]
+    round2_topics = _progress_topic_rows(round2_question_rows, round2_progress_rows, "round2_question")
+
+    def metric(topics):
+        total = sum(topic["total"] for topic in topics)
+        completed = sum(topic["completed"] for topic in topics)
+        return {
+            "completed": completed,
+            "total": total,
+            "percentage": round(completed * 100 / total) if total else 0,
+        }
+
+    return {
+        "summary": {
+            "round1Concepts": metric(concept_topics),
+            "round1Practice": metric(round1_topics),
+            "round2Practice": metric(round2_topics),
+        },
+        "details": {
+            "round1Concepts": concept_topics,
+            "round1Practice": round1_topics,
+            "round2Practice": round2_topics,
+        },
     }
 
 
@@ -627,6 +792,7 @@ def update_reviewer_candidate(candidate_id: str, payload: CandidateUpdateRequest
                     name = :name,
                     email = :email,
                     phone = :phone,
+                    language_selected = :language_selected,
                     lead_name = :lead_name,
                     status = :status,
                     role = :role,
@@ -641,6 +807,7 @@ def update_reviewer_candidate(candidate_id: str, payload: CandidateUpdateRequest
                 "name": payload.name.strip(),
                 "email": payload.email.strip().lower(),
                 "phone": payload.phone.strip() if payload.phone and payload.phone.strip() else None,
+                "language_selected": payload.language_selected.strip() if payload.language_selected and payload.language_selected.strip() else None,
                 "lead_name": payload.lead_name.strip() if payload.lead_name and payload.lead_name.strip() else None,
                 "status": payload.status.strip() if payload.status and payload.status.strip() else "pending",
                 "role": role,
@@ -659,6 +826,7 @@ def update_reviewer_candidate(candidate_id: str, payload: CandidateUpdateRequest
                     c.name,
                     c.email,
                     c.phone,
+                          c.language_selected,
                     c.created_at,
                     c.start_date,
                     c.karat_prep_timeline,
@@ -681,6 +849,7 @@ def update_reviewer_candidate(candidate_id: str, payload: CandidateUpdateRequest
         "name": row["name"],
         "email": row["email"],
         "phone": row["phone"],
+        "languageSelected": row.get("language_selected") or "",
         "startDate": format_date_value(row["start_date"] or row["created_at"]),
         "karatAssessmentDate": format_date_value(row["karat_assessment_date"]),
         "timeline": row["karat_prep_timeline"] or "",

@@ -54,7 +54,7 @@ export default function CandidateDetailedReportPage() {
           <table>
             <thead>
               <tr>
-                <th>Round 1 / Round 2</th>
+                <th>Round 1 / Round 2 / Mock</th>
                 <th>Attempt No</th>
                 <th>Attempted Date</th>
                 <th>View Progress</th>
@@ -64,7 +64,7 @@ export default function CandidateDetailedReportPage() {
             <tbody>
               {candidate.attempts.map((attempt) => (
                 <tr key={attempt.id}>
-                  <td>{attempt.round}</td>
+                  <td>{attempt.round === "Round 3" ? "Mock" : attempt.round}</td>
                   <td>{attempt.attemptNo}</td>
                   <td>{attempt.attemptedDate}</td>
                   <td>

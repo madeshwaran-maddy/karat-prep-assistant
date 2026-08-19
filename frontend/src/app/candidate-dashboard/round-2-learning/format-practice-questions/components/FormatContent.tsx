@@ -3,14 +3,27 @@ import type { FormatConfig } from "../types";
 
 type Props = {
   format: FormatConfig;
+  completed: boolean;
+  completing: boolean;
+  onComplete: () => void;
 };
 
-export default function FormatContent({ format }: Props) {
+export default function FormatContent({ format, completed, completing, onComplete }: Props) {
   return (
     <article className={styles.fpqCard}>
-      <div className={styles.fpqQuestionHeading}>
-        <h2>{format.title || "Format Guidance"}</h2>
-        {format.description ? <p>{format.description}</p> : null}
+      <div className={styles.fpqHeadingRow}>
+        <div className={styles.fpqQuestionHeading}>
+          <h2>{format.title || "Format Guidance"}</h2>
+          {format.description ? <p>{format.description}</p> : null}
+        </div>
+        <button
+          type="button"
+          className={`${styles.fpqNavButton} ${styles.complete}`}
+          onClick={onComplete}
+          disabled={completed || completing}
+        >
+          {completed ? "Format completed" : completing ? "Saving..." : "Mark as Completed"}
+        </button>
       </div>
 
       <div className={styles.fpqDivider} />
@@ -42,6 +55,7 @@ export default function FormatContent({ format }: Props) {
           </div>
         </section>
       ))}
+
     </article>
   );
 }

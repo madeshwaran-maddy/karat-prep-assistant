@@ -23,6 +23,7 @@ export default function DebuggingDrillPage() {
     selectDrill,
     nextQuestion,
     questionProgress,
+    secondsRemaining,
     hasSubmittedCurrentQuestion,
     updateCode,
     updateAnalysis,
@@ -34,6 +35,13 @@ export default function DebuggingDrillPage() {
   return (
 
     <div className="debug-page">
+
+      <div className="mx-6 mt-6 flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+        <span className="text-sm font-semibold text-amber-900">Time remaining</span>
+        <span className="font-mono text-lg font-bold text-amber-900">
+          {Math.floor(secondsRemaining / 60)}:{String(secondsRemaining % 60).padStart(2, "0")}
+        </span>
+      </div>
 
       <div className="px-6 pt-6">
         <Link
@@ -104,7 +112,10 @@ export default function DebuggingDrillPage() {
         onClose={closeResult}
       />
 
-      <LoadingOverlay visible={loading} message="Generating question..." />
+      <LoadingOverlay
+        visible={loading || evaluating}
+        message={evaluating ? "Submitting answer..." : "Generating question..."}
+      />
 
     </div>
 

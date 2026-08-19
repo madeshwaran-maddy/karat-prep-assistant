@@ -1,5 +1,6 @@
 import styles from "../format-practice-question.module.css";
 import type { PracticeQuestion } from "../types";
+import type { ProgressStatus } from "../hooks/useRound2Progress";
 
 type TabKey = "format" | number;
 
@@ -7,13 +8,29 @@ type Props = {
   questions: PracticeQuestion[];
   selectedTab: TabKey;
   onSelect: (tab: TabKey) => void;
+  getStatus: (topicId: string, questionNo: number) => ProgressStatus;
 };
 
 export default function FormatSidebar({
   questions,
   selectedTab,
   onSelect,
+  getStatus,
 }: Props) {
+  const formatStatus = getStatus("format", 0);
+
+  function statusClass(status: ProgressStatus) {
+    if (status === "completed") {
+      return styles.completed;
+    }
+
+    if (status === "in_progress") {
+      return styles.inProgress;
+    }
+
+    return "";
+  }
+
   return (
     <aside className={styles.fpqSidebar}>
       <h2>Format &amp; Questions</h2>
@@ -33,6 +50,9 @@ export default function FormatSidebar({
             <span className={styles.fpqPlay}>▶</span>
           )}
           <span>Format</span>
+          <span className={`${styles.fpqStatus} ${statusClass(formatStatus)}`}>
+            {formatStatus.replace("_", " ")}
+          </span>
         </button>
         {questions.map((question, index) => (
           <button
@@ -47,6 +67,16 @@ export default function FormatSidebar({
               <span className={styles.fpqPlay}>▶</span>
             )}
             <span>Question {question.questionNo || index + 1}</span>
+            <span
+              className={`${styles.fpqStatus} ${statusClass(
+                getStatus(
+                  "format-practice-questions",
+                  question.questionNo || index + 1
+                )
+              )}`}
+            >
+              {getStatus("format-practice-questions", question.questionNo || index + 1).replace("_", " ")}
+            </span>
           </button>
         ))}
       </nav>

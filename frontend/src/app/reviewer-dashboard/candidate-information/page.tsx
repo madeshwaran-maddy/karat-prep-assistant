@@ -131,6 +131,7 @@ export default function CandidateInformationPage() {
                 name: String(formData.get("name") ?? ""),
                 email: String(formData.get("email") ?? ""),
                 phone: String(formData.get("phone") ?? ""),
+                language_selected: String(formData.get("language_selected") ?? ""),
                 lead_name: String(formData.get("lead_name") ?? ""),
                 start_date: String(formData.get("start_date") ?? ""),
                 karat_assessment_date: String(formData.get("karat_assessment_date") ?? ""),
@@ -164,6 +165,7 @@ export default function CandidateInformationPage() {
                           name: updatedCandidate.name,
                           email: updatedCandidate.email,
                           phone: updatedCandidate.phone ?? "",
+                          languageSelected: updatedCandidate.languageSelected ?? "",
                           startDate: updatedCandidate.startDate,
                           karatAssessmentDate: updatedCandidate.karatAssessmentDate,
                           timeline: updatedCandidate.timeline,
@@ -193,6 +195,15 @@ export default function CandidateInformationPage() {
             <label>
               Phone Number
               <input name="phone" defaultValue={candidate.phone} />
+            </label>
+
+            <label>
+              Programming Language
+              <select name="language_selected" defaultValue={candidate.languageSelected || ""}>
+                <option value="">Select a language</option>
+                <option value="Java">Java</option>
+                <option value="Node.js">Node.js</option>
+              </select>
             </label>
 
             <label>

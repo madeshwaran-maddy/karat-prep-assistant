@@ -179,6 +179,24 @@
   cursor: pointer;
 }
 
+.fpqStatus {
+  margin-left: auto;
+  color: #718096;
+  font-size: 10px;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.fpqStatus.completed {
+  color: #16803c;
+  font-weight: 700;
+}
+
+.fpqStatus.inProgress {
+  color: #c56a12;
+  font-weight: 700;
+}
+
 .fpqQuestionTab:hover {
   border-color: #9ed9b2;
   background: #fbfefc;
@@ -222,6 +240,13 @@
   margin: 9px 0 0;
   color: #66758a;
   font-size: 15px;
+}
+
+.fpqHeadingRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
 }
 
 .fpqDivider {
@@ -340,6 +365,13 @@
   color: #fff;
 }
 
+.fpqNavButton.complete {
+  flex: 0 0 auto;
+  border-color: #9bd8ae;
+  background: #f1fbf3;
+  color: #237143;
+}
+
 .fpqNavButton:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -397,6 +429,10 @@
     justify-content: center;
     gap: 6px;
     padding: 18px 20px;
+  }
+
+  .fpqHeadingRow {
+    flex-direction: column;
   }
 }
 

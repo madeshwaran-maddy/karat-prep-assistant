@@ -26,6 +26,7 @@ export type Candidate = {
   name: string;
   email: string;
   phone: string;
+  languageSelected: string;
   startDate: string;
   karatAssessmentDate?: string;
   timeline: string;
@@ -36,6 +37,22 @@ export type Candidate = {
   round2Attempts: number;
   totalMockAttempts: number;
   attempts: Attempt[];
+};
+
+export type ProgressItem = { name: string; completed: boolean };
+export type ProgressTopic = { name: string; completed: number; total: number; items: ProgressItem[] };
+export type ProgressMetric = { completed: number; total: number; percentage: number };
+export type LearningProgress = {
+  summary: {
+    round1Concepts: ProgressMetric;
+    round1Practice: ProgressMetric;
+    round2Practice: ProgressMetric;
+  };
+  details: {
+    round1Concepts: ProgressTopic[];
+    round1Practice: ProgressTopic[];
+    round2Practice: ProgressTopic[];
+  };
 };
 
 export const candidates: Candidate[] = [];
@@ -71,6 +88,18 @@ export async function fetchCandidate(candidateId: string): Promise<Candidate | n
   }
 
   return data;
+}
+
+export async function fetchLearningProgress(candidateId: string): Promise<LearningProgress> {
+  const response = await fetch(
+    `http://localhost:8000/api/reviewer/candidates/${candidateId}/learning-progress`
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to load learning progress.");
+  }
+
+  return response.json() as Promise<LearningProgress>;
 }
 
 export function getCandidate(id: string) {

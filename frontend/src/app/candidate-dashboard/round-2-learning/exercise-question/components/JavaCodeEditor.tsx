@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Editor from "@monaco-editor/react";
+import { useRouter } from "next/navigation";
 
 import { ExerciseQuestion } from "../lib/questionTypes";
 import ExecutionResult from "./ExecutionResult";
@@ -13,6 +14,7 @@ interface Props {
 export default function JavaCodeEditor({
   question,
 }: Props) {
+  const router = useRouter();
   const [code, setCode] = useState(
     question.code
   );
@@ -24,6 +26,91 @@ export default function JavaCodeEditor({
   const [error, setError] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
+  const [secondsRemaining, setSecondsRemaining] = useState(30 * 60);
+  const codeRef = useRef(code);
+  const outputRef = useRef(output);
+  const errorRef = useRef(error);
+  const hasSubmittedRef = useRef(false);
+
+  useEffect(() => {
+    codeRef.current = code;
+  }, [code]);
+
+  useEffect(() => {
+    outputRef.current = output;
+  }, [output]);
+
+  useEffect(() => {
+    errorRef.current = error;
+  }, [error]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setSecondsRemaining((seconds) => {
+        if (seconds <= 1) {
+          window.clearInterval(timer);
+          return 0;
+        }
+
+        return seconds - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (secondsRemaining !== 0 || hasSubmittedRef.current) {
+      return;
+    }
+
+    void submitAnswer(true);
+  }, [secondsRemaining]);
+
+  async function submitAnswer(autoSubmit = false) {
+    if (hasSubmittedRef.current) {
+      return;
+    }
+
+    hasSubmittedRef.current = true;
+    setSubmitting(true);
+
+    try {
+      const response = await fetch("http://localhost:8000/api/assessments/submit-exercise-question", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          assessmentId: question.assessmentId,
+          questionId: question.id,
+          userCode: codeRef.current,
+          userAnalysis: outputRef.current || errorRef.current || "",
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Failed to submit exercise question.");
+      }
+
+      if (autoSubmit) {
+        router.push("/candidate-dashboard");
+        return;
+      }
+
+      alert(data.message || "Exercise answer submitted successfully.");
+      hasSubmittedRef.current = false;
+    } catch (submitError) {
+      hasSubmittedRef.current = false;
+      console.error("Exercise submit failed", submitError);
+      alert(submitError instanceof Error ? submitError.message : "Failed to submit exercise question.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   async function runCode() {
     try {
@@ -88,6 +175,13 @@ export default function JavaCodeEditor({
 
   return (
     <div>
+
+      <div className="mb-5 flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+        <span className="text-sm font-semibold text-amber-900">Time remaining</span>
+        <span className="font-mono text-lg font-bold text-amber-900">
+          {Math.floor(secondsRemaining / 60)}:{String(secondsRemaining % 60).padStart(2, "0")}
+        </span>
+      </div>
 
       {/* Question title */}
       <div className="mb-5">
@@ -164,38 +258,7 @@ export default function JavaCodeEditor({
 
         <button
           type="button"
-          onClick={async () => {
-            try {
-              setSubmitting(true);
-
-              const response = await fetch("http://localhost:8000/api/assessments/submit-exercise-question", {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  assessmentId: question.assessmentId,
-                  questionId: question.id,
-                  userCode: code,
-                  userAnalysis: output || error || "",
-                }),
-              });
-
-              const data = await response.json().catch(() => ({}));
-
-              if (!response.ok) {
-                throw new Error(data.detail || "Failed to submit exercise question.");
-              }
-
-              alert(data.message || "Exercise answer submitted successfully.");
-            } catch (submitError) {
-              console.error("Exercise submit failed", submitError);
-              alert(submitError instanceof Error ? submitError.message : "Failed to submit exercise question.");
-            } finally {
-              setSubmitting(false);
-            }
-          }}
+          onClick={() => void submitAnswer()}
           disabled={submitting}
           className="rounded-lg bg-emerald-600 px-10 py-3 font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
         >

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import styles from "../format-practice-question.module.css";
 import FormatSidebar from "./FormatSidebar";
@@ -9,6 +9,7 @@ import QuestionContent from "./QuestionContent";
 import { loadFormat } from "../lib/format";
 import { loadQuestionsFromExcel } from "../lib/excel";
 import type { FormatConfig, PracticeQuestion } from "../types";
+import { getProgressStatus, useRound2Progress } from "../hooks/useRound2Progress";
 
 type TabKey = "format" | number;
 
@@ -18,6 +19,94 @@ export default function FormatPracticeQuestion() {
   const [selectedTab, setSelectedTab] = useState<TabKey>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isCompleting, setIsCompleting] = useState(false);
+  const { progress, fetchAll, start, complete, updateTime } = useRound2Progress();
+  const activeStartedAt = useRef<number | null>(null);
+  const activeItem = useRef<{ topicId: string; questionNo: number } | null>(null);
+
+  function getActiveItem(tab: TabKey) {
+    if (tab === "format") {
+      return { topicId: "format", questionNo: 0 };
+    }
+
+    const question = questions[tab];
+    return question
+      ? { topicId: "format-practice-questions", questionNo: question.questionNo || tab + 1 }
+      : null;
+  }
+
+  async function stopTracking() {
+    const item = activeItem.current;
+    const startedAt = activeStartedAt.current;
+    if (!item || startedAt === null) {
+      return;
+    }
+
+    const existing = progress[`${item.topicId}-${item.questionNo}`];
+    await updateTime(
+      item.topicId,
+      item.questionNo,
+      (existing?.timeSpentSeconds ?? 0) + (Date.now() - startedAt) / 1000
+    );
+    activeStartedAt.current = null;
+  }
+
+  async function startTracking(tab: TabKey) {
+    const item = getActiveItem(tab);
+    if (!item) {
+      return;
+    }
+
+    activeItem.current = item;
+    activeStartedAt.current = Date.now();
+    await start(item.topicId, item.questionNo);
+  }
+
+  async function selectTab(tab: TabKey) {
+    await stopTracking();
+    setSelectedTab(tab);
+    await startTracking(tab);
+  }
+
+  async function completeSelected() {
+    const item = getActiveItem(selectedTab);
+    if (!item || isCompleting) {
+      return;
+    }
+
+    setIsCompleting(true);
+    try {
+      const existing = progress[`${item.topicId}-${item.questionNo}`];
+      const elapsed = activeStartedAt.current === null
+        ? 0
+        : (Date.now() - activeStartedAt.current) / 1000;
+      const completed = await complete(
+        item.topicId,
+        item.questionNo,
+        (existing?.timeSpentSeconds ?? 0) + elapsed
+      );
+
+      if (!completed) {
+        return;
+      }
+
+      const nextTab = selectedTab === "format"
+        ? (questions.length ? 0 : "format")
+        : selectedTab < questions.length - 1
+          ? selectedTab + 1
+          : selectedTab;
+
+      if (nextTab !== selectedTab) {
+        await selectTab(nextTab);
+      } else {
+        activeStartedAt.current = Date.now();
+      }
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } finally {
+      setIsCompleting(false);
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -32,6 +121,27 @@ export default function FormatPracticeQuestion() {
           ),
         ]);
 
+        const savedProgress = await fetchAll();
+        const inProgressIndex = questionData.findIndex((question, index) => {
+          const questionNo = question.questionNo || index + 1;
+          return savedProgress[
+            `format-practice-questions-${questionNo}`
+          ]?.status === "in_progress";
+        });
+        const allQuestionsCompleted = questionData.length > 0 && questionData.every(
+          (question, index) => {
+            const questionNo = question.questionNo || index + 1;
+            return savedProgress[
+              `format-practice-questions-${questionNo}`
+            ]?.status === "completed";
+          }
+        );
+
+        setSelectedTab(
+          inProgressIndex >= 0 || allQuestionsCompleted
+            ? Math.max(0, inProgressIndex)
+            : 0
+        );
         setFormat(formatData);
         setQuestions(questionData);
       } catch (err) {
@@ -44,23 +154,31 @@ export default function FormatPracticeQuestion() {
     }
 
     load();
-  }, []);
+  }, [fetchAll]);
+
+  useEffect(() => {
+    if (!loading && !error && (format || questions.length)) {
+      void startTracking(selectedTab);
+    }
+
+    return () => {
+      void stopTracking();
+    };
+  }, [loading, error, format, questions.length]);
 
   const selectedQuestion =
     selectedTab === "format" ? null : questions[selectedTab] ?? null;
 
   function goPrevious() {
-    setSelectedTab((current) =>
-      current === "format" ? 0 : Math.max(0, current - 1)
-    );
+    const nextTab = selectedTab === "format" ? 0 : Math.max(0, selectedTab - 1);
+    void selectTab(nextTab);
   }
 
   function goNext() {
-    setSelectedTab((current) =>
-      current === "format"
-        ? 0
-        : Math.min(questions.length - 1, current + 1)
-    );
+    const nextTab = selectedTab === "format"
+      ? 0
+      : Math.min(questions.length - 1, selectedTab + 1);
+    void selectTab(nextTab);
   }
 
   return (
@@ -89,7 +207,8 @@ export default function FormatPracticeQuestion() {
         <FormatSidebar
           questions={questions}
           selectedTab={selectedTab}
-          onSelect={setSelectedTab}
+          onSelect={(tab) => void selectTab(tab)}
+          getStatus={(topicId, questionNo) => getProgressStatus(progress, topicId, questionNo)}
         />
 
         <div className={styles.fpqContent}>
@@ -114,7 +233,12 @@ export default function FormatPracticeQuestion() {
           )}
 
           {!loading && !error && selectedTab === "format" && format && (
-            <FormatContent format={format} />
+            <FormatContent
+              format={format}
+              completed={getProgressStatus(progress, "format", 0) === "completed"}
+              completing={isCompleting}
+              onComplete={() => void completeSelected()}
+            />
           )}
 
           {!loading && !error && selectedTab === "format" && !format && (
@@ -136,6 +260,9 @@ export default function FormatPracticeQuestion() {
               total={questions.length}
               onPrevious={goPrevious}
               onNext={goNext}
+              completed={getProgressStatus(progress, "format-practice-questions", selectedQuestion.questionNo || selectedTab + 1) === "completed"}
+              completing={isCompleting}
+              onComplete={() => void completeSelected()}
             />
           )}
         </div>
