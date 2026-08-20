@@ -180,8 +180,68 @@ When adding a new language to the Practice Questions screen:
 
 11. If `getSections()` in `PracticeQuestionService.ts` is used by future UI code, make it accept a language ID and return sections from that language instead of always returning Java sections.
 
-# Round 2 Larning:
-## Format and Practice Questions Screen:
+# Shared Language Configuration
 
-1. Create a new folder under frontend/public/format-practice-question/language_name.
-2. 2 files needs to be created. [format.json and questions.xlsx] with same format
+When adding a language, update both manifests with the same `id` and `enabled` value:
+
+1. Add the language to `frontend/src/config/languages.json` with its display name, Monaco language, Prism `syntaxLanguage`, file extension, Judge0 language ID, Judge0 URL, and `enabled` status.
+2. Add the language ID to the `SupportedLanguage` union in `frontend/src/config/languages.ts`.
+3. Add the matching language entry to `backend/config/languages.json`. The backend entry must include the language ID, name, file extension, Judge0 language ID, Judge0 URL, and `enabled` status.
+4. Keep the IDs, file extensions, Judge0 values, and enabled state consistent across both manifests. Do not reuse an existing concept, topic, drill, or question ID.
+
+## Debugging Drill Screen
+
+When adding a new language to the Round 1 Debugging Drill:
+
+1. Create `frontend/src/app/candidate-dashboard/round-1-learning/debugging-drill/data/<language-id>/drills.json` using the existing drill structure. Each drill needs a unique `id`, `title`, `difficulty`, and `prompt` containing `topic`, `bugTypes`, and `rules`.
+2. Import the dataset in `frontend/src/app/candidate-dashboard/round-1-learning/debugging-drill/services/debuggingApi.ts` and add it to the `dataByLanguage` map.
+3. Create backend drill data at `backend/debugging_drill/data/<language-id>/drills.json` with the same language-specific drill content and IDs.
+4. Create both backend prompt templates at:
+	- `backend/debugging_drill/prompts/<language-id>/generate_prompt.txt`
+	- `backend/debugging_drill/prompts/<language-id>/evaluate_prompt.txt`
+5. Ensure generated code uses the new language syntax and file extension. The backend prompt service selects templates by language ID, and the backend route validates the ID against `backend/config/languages.json`.
+6. Verify that the drill list loads for the selected language, a question can be generated, code and analysis can be submitted, evaluation completes, and the editor uses the configured Monaco language.
+
+## Mock Assessment Screen
+
+Mock Assessment combines the Debugging Drill assets above with a Round 2 Excel question:
+
+1. Complete the Debugging Drill steps for the new language. Round 1 questions are generated from `backend/debugging_drill/data/<language-id>/drills.json` and the matching prompt templates.
+2. Create `backend/mock_assessment/data/<language-id>/round2_questions.xlsx` using the existing workbook columns: `QuestionNo`, `title`, and `Code`. Include at least one non-empty valid row.
+3. Confirm the backend mock-assessment route receives the new language ID and selects the new workbook. Do not hard-code the Java workbook path.
+4. Verify that the assessment loads language-appropriate Round 1 and Round 2 questions, uses the new file extension, submits both rounds, and returns the correct language in the response.
+
+## Round 2 Exercise Question Screen
+
+1. Create `backend/exercise-question/<language-id>/exercise-questions.xlsx` using the existing workbook columns: `QuestionNo`, `title`, and `Code`.
+2. Add the new language to `backend/config/languages.json` so `/api/assessments/start-exercise-question?language=<language-id>` accepts it and selects the correct workbook.
+3. If the frontend `loadExerciseQuestions()` helper in `frontend/src/app/candidate-dashboard/round-2-learning/exercise-question/lib/excelReader.ts` is used, change it to accept a language ID and resolve `questions/<language-id>/exercise-questions.xlsx`; do not leave the Java path hard-coded.
+4. Ensure the exercise editor uses `language.monacoLanguage`, the submission uses `language.id`, and the Judge0 route uses the new language's configured Judge0 values.
+5. Verify that the exercise question loads for the selected language, displays the correct code, executes successfully where Judge0 supports it, and reports execution errors without falling back to Java content.
+
+# Round 2 Learning
+## Format and Practice Questions Screen
+
+1. Create a new folder under `frontend/public/format-practice-question/<language-id>`.
+2. Add `format.json` and `questions.xlsx` to that folder, following the existing Java/Node formats. `format.json` must contain a `title`; the workbook's first row is the header and each later non-empty row is a question.
+3. The screen loads these files from `/format-practice-question/${language.id}/format.json` and `/format-practice-question/${language.id}/questions.xlsx`, so the folder name must exactly match the language ID.
+4. Use language-appropriate wording and code in both files. Keep question numbering valid and sequential, and ensure every workbook question has the columns required by the existing Excel parser.
+5. Verify that the format content and first question load for the new language, all questions can be navigated, and Round 2 progress starts, updates, completes, and restores after reopening the tab.
+
+## Round 2 Progress and Navigation
+
+For every language-dependent Round 2 screen:
+
+1. Pass the selected `language.id` to API requests and progress hooks; never use the default Java value when the selected language is available.
+2. Verify direct navigation, reloads, previous/next controls, completion state, and progress restoration with the new language selected.
+
+## End-to-End Checklist
+
+Before enabling the language for candidates:
+
+- Both frontend and backend manifests contain the language and agree on its ID and execution settings.
+- Concepts, Practice Questions, Debugging Drill, Mock Assessment, Round 2 Format, and Round 2 Exercise Question each have language-specific content where applicable.
+- No dataset loader or API route still points unconditionally to Java data.
+- Syntax highlighting, Monaco editing, generated filenames, and Judge0 execution use the new language configuration.
+- Progress is isolated by the existing language-aware keys and does not reuse unrelated IDs.
+- The language is tested with a fresh candidate session and with an existing saved-progress session.

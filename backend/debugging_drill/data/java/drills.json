@@ -1,155 +1,260 @@
 {
-    "collections": [
-        {
-            "id": "map",
-            "title": "Map",
-            "difficulty": "medium",
-            "prompt": {
-                "topic": "Java HashMap",
-                "bugTypes": [
-                    "equals/hashCode",
-                    "ConcurrentModificationException",
-                    "NullPointerException",
-                    "Wrong Key Retrieval",
-                    "Mutable Keys"
-                ],
-                "rules": [
-                    "Generate only one bug",
-                    "Return the requested JSON structure containing Java code",
-                    "Use Java 17",
-                    "Don't reveal the answer"
-                ]
-            }
-        },
-        {
-            "id": "list",
-            "title": "List",
-            "difficulty": "medium",
-            "prompt": {
-                "topic": "Java List",
-                "bugTypes": [
-                    "IndexOutOfBoundsException",
-                    "ConcurrentModificationException",
-                    "UnsupportedOperationException (Immutable List)",
-                    "Off-by-one Error during Element Removal",
-                    "SubList Structural Modification"
-                ],
-                "rules": [
-                    "Generate only one bug",
-                    "Return the requested JSON structure containing Java code",
-                    "Use Java 17",
-                    "Don't reveal the answer"
-                ]
-            }
-        },
-        {
-            "id": "set",
-            "title": "Set",
-            "difficulty": "medium",
-            "prompt": {
-                "topic": "Java Set",
-                "bugTypes": [
-                    "equals/hashCode Contract Violation",
-                    "Mutable Elements altering Set identity",
-                    "ClassCastException in TreeSet",
-                    "NullPointerException in Set.of or TreeSet",
-                    "Duplicate Element Insertion Failure"
-                ],
-                "rules": [
-                    "Generate only one bug",
-                    "Return the requested JSON structure containing Java code",
-                    "Use Java 17",
-                    "Don't reveal the answer"
-                ]
-            }
-        }
-    ],
-    "equals_hashCode": [
-        {
-            "id": "equals_hashCode",
-            "title": "Equals and HashCode",
-            "difficulty": "medium",
-            "prompt": {
-                "topic": "Java equals() and hashCode() Contract",
-                "bugTypes": [
-                    "Overriding equals without hashCode",
-                    "Symmetry or Transitivity Violation in equals",
-                    "Using non-final fields in hashCode",
-                    "Incorrect Type Checking in equals (ClassCastException)",
-                    "Overloading instead of Overriding equals(Object)"
-                ],
-                "rules": [
-                    "Generate only one bug",
-                    "Return the requested JSON structure containing Java code",
-                    "Use Java 17",
-                    "Don't reveal the answer"
-                ]
-            }
-        },
-        {
-            "id": "comparator",
-            "title": "Comparator and Comparable",
-            "difficulty": "medium",
-            "prompt": {
-                "topic": "Java Comparator and Comparable",
-                "bugTypes": [
-                    "Integer Overflow in Subtraction-based Comparison",
-                    "Inconsistency between compareTo and equals",
-                    "Violation of Transitivity in Compare Logic",
-                    "NullPointerException on Null Values",
-                    "Non-deterministic Sorting Order"
-                ],
-                "rules": [
-                    "Generate only one bug",
-                    "Return the requested JSON structure containing Java code",
-                    "Use Java 17",
-                    "Don't reveal the answer"
-                ]
-            }
-        }
-    ],
-    "exceptions": [
-        {
-            "id": "exceptions",
-            "title": "Exceptions",
-            "difficulty": "medium",
-            "prompt": {
-                "topic": "Java Standard Exceptions",
-                "bugTypes": [
-                    "Swallowed Exception in Catch Block",
-                    "Catching Generic Throwable or Exception",
-                    "Resource Leak due to missing Try-With-Resources",
-                    "Unchecked Exception thrown in Finally Block",
-                    "Loss of Original Exception StackTrace"
-                ],
-                "rules": [
-                    "Generate only one bug",
-                    "Return the requested JSON structure containing Java code",
-                    "Use Java 17",
-                    "Don't reveal the answer"
-                ]
-            }
-        },
-        {
-            "id": "custom_exceptions",
-            "title": "Custom Exceptions",
-            "difficulty": "medium",
-            "prompt": {
-                "topic": "Java Custom Exceptions",
-                "bugTypes": [
-                    "Missing Cause Parameter in Constructor (Lost Exception Chain)",
-                    "Incorrect Base Class Selection (Checked vs Unchecked)",
-                    "Overusing Checked Exceptions for Logic Flow",
-                    "Missing Serializable UI or SerialVersionUID",
-                    "Exposing Sensitive Data in Exception Message"
-                ],
-                "rules": [
-                    "Generate only one bug",
-                    "Return the requested JSON structure containing Java code",
-                    "Use Java 17",
-                    "Don't reveal the answer"
-                ]
-            }
-        }
-    ]
+  "collections": [
+    {
+      "id": "map",
+      "title": "Map",
+      "difficulty": "medium",
+      "prompt": {
+        "topic": "Java HashMap",
+        "bugTypes": [
+          "equals/hashCode",
+          "ConcurrentModificationException",
+          "NullPointerException",
+          "Wrong Key Retrieval",
+          "Mutable Keys"
+        ],
+
+        "rules": [
+          "Generate exactly 3 real bugs.",
+          "Every bug must belong to one of the provided bugTypes.",
+          "Each bug must cause incorrect behavior, incorrect output, an exception, incorrect state, or another real defect.",
+          "Do not generate zero, one, two, or more than three bugs.",
+          "Do not count coding style issues, naming issues, formatting issues, or optional improvements as bugs.",
+          "Implement the bugs directly in the executable Java code.",
+          "Do not reveal, identify, or explain any bug.",
+          "Use Java 17.",
+          "Generate exactly one complete Java program.",
+          "The program must contain a main() method.",
+          "The program must be self-contained.",
+          "The program must contain 20 to 80 physical source-code lines.",
+          "Do not include comments.",
+          "Do not use //, /*, */, or /** anywhere in the Java source.",
+          "Do not intentionally create syntax errors.",
+          "The program must become correct after fixing all bugs.",
+          "Return only the requested JSON structure.",
+          "Do not use Markdown or code fences."
+        ]
+      }
+    },
+    {
+      "id": "list",
+      "title": "List",
+      "difficulty": "medium",
+      "prompt": {
+        "topic": "Java List",
+        "bugTypes": [
+          "IndexOutOfBoundsException",
+          "ConcurrentModificationException",
+          "UnsupportedOperationException (Immutable List)",
+          "Off-by-one Error during Element Removal",
+          "SubList Structural Modification"
+        ],
+
+        "rules": [
+          "Generate exactly 3 real bugs.",
+          "Every bug must belong to one of the provided bugTypes.",
+          "Each bug must cause incorrect behavior, incorrect output, an exception, incorrect state, or another real defect.",
+          "Do not generate zero, one, two, or more than three bugs.",
+          "Do not count coding style issues, naming issues, formatting issues, or optional improvements as bugs.",
+          "Implement the bugs directly in the executable Java code.",
+          "Do not reveal, identify, or explain any bug.",
+          "Use Java 17.",
+          "Generate exactly one complete Java program.",
+          "The program must contain a main() method.",
+          "The program must be self-contained.",
+          "The program must contain 20 to 80 physical source-code lines.",
+          "Do not include comments.",
+          "Do not use //, /*, */, or /** anywhere in the Java source.",
+          "Do not intentionally create syntax errors.",
+          "The program must become correct after fixing all bugs.",
+          "Return only the requested JSON structure.",
+          "Do not use Markdown or code fences."
+        ]
+      }
+    },
+    {
+      "id": "set",
+      "title": "Set",
+      "difficulty": "medium",
+      "prompt": {
+        "topic": "Java Set",
+        "bugTypes": [
+          "equals/hashCode Contract Violation",
+          "Mutable Elements altering Set identity",
+          "ClassCastException in TreeSet",
+          "NullPointerException in Set.of or TreeSet",
+          "Duplicate Element Insertion Failure"
+        ],
+
+        "rules": [
+          "Generate exactly 3 real bugs.",
+          "Every bug must belong to one of the provided bugTypes.",
+          "Each bug must cause incorrect behavior, incorrect output, an exception, incorrect state, or another real defect.",
+          "Do not generate zero, one, two, or more than three bugs.",
+          "Do not count coding style issues, naming issues, formatting issues, or optional improvements as bugs.",
+          "Implement the bugs directly in the executable Java code.",
+          "Do not reveal, identify, or explain any bug.",
+          "Use Java 17.",
+          "Generate exactly one complete Java program.",
+          "The program must contain a main() method.",
+          "The program must be self-contained.",
+          "The program must contain 20 to 80 physical source-code lines.",
+          "Do not include comments.",
+          "Do not use //, /*, */, or /** anywhere in the Java source.",
+          "Do not intentionally create syntax errors.",
+          "The program must become correct after fixing all bugs.",
+          "Return only the requested JSON structure.",
+          "Do not use Markdown or code fences."
+        ]
+      }
+    }
+  ],
+  "equals_hashCode": [
+    {
+      "id": "equals_hashCode",
+      "title": "Equals and HashCode",
+      "difficulty": "medium",
+      "prompt": {
+        "topic": "Java equals() and hashCode() Contract",
+        "bugTypes": [
+          "Overriding equals without hashCode",
+          "Symmetry or Transitivity Violation in equals",
+          "Using non-final fields in hashCode",
+          "Incorrect Type Checking in equals",
+          "Overloading instead of Overriding equals(Object)"
+        ],
+
+        "rules": [
+          "Generate exactly 3 real bugs.",
+          "Every bug must belong to one of the provided bugTypes.",
+          "Each bug must cause incorrect collection behavior, incorrect comparison results, incorrect lookup results, an exception, or another observable defect.",
+          "Do not generate zero, one, two, or more than three bugs.",
+          "Do not count style issues or optional improvements as bugs.",
+          "Implement the bugs directly in the Java code.",
+          "Do not reveal or explain the bugs.",
+          "Use Java 17.",
+          "Generate exactly one complete Java program.",
+          "The program must contain main().",
+          "The program must be self-contained.",
+          "The program must contain 20 to 80 physical source-code lines.",
+          "Do not include comments.",
+          "Do not use //, /*, */, or /** anywhere in the Java source.",
+          "Do not intentionally create syntax errors.",
+          "The program must become correct after fixing all bugs.",
+          "Return only valid JSON.",
+          "Do not use Markdown or code fences."
+        ]
+      }
+    },
+    {
+      "id": "comparator",
+      "title": "Comparator and Comparable",
+      "difficulty": "medium",
+      "prompt": {
+        "topic": "Java Comparator and Comparable",
+        "bugTypes": [
+          "Integer Overflow in Subtraction-based Comparison",
+          "Inconsistency between compareTo and equals",
+          "Violation of Transitivity in Compare Logic",
+          "NullPointerException on Null Values",
+          "Non-deterministic Sorting Order"
+        ],
+
+        "rules": [
+          "Generate exactly 3 real bugs.",
+          "Every bug must belong to one of the provided bugTypes.",
+          "Each bug must produce incorrect sorting behavior, incorrect comparison results, an exception, or another observable defect.",
+          "Do not generate zero, one, two, or more than three bugs.",
+          "Do not count style issues or optional improvements as bugs.",
+          "Implement the bugs directly in the Java code.",
+          "Do not reveal or explain the bugs.",
+          "Use Java 17.",
+          "Generate exactly one complete Java program.",
+          "The program must contain main().",
+          "The program must be self-contained.",
+          "The program must contain 20 to 80 physical source-code lines.",
+          "Do not include comments.",
+          "Do not use //, /*, */, or /** anywhere in the Java source.",
+          "Do not intentionally create syntax errors.",
+          "The program must become correct after fixing all bugs.",
+          "Return only valid JSON.",
+          "Do not use Markdown or code fences."
+        ]
+      }
+    }
+  ],
+  "exceptions": [
+    {
+      "id": "exceptions",
+      "title": "Exceptions",
+      "difficulty": "medium",
+      "prompt": {
+        "topic": "Java Standard Exceptions",
+        "bugTypes": [
+          "Swallowed Exception in Catch Block",
+          "Catching Generic Throwable or Exception",
+          "Resource Leak due to missing Try-With-Resources",
+          "Unchecked Exception thrown in Finally Block",
+          "Loss of Original Exception StackTrace"
+        ],
+
+        "rules": [
+          "Generate exactly 3 real bugs.",
+          "Every bug must belong to one of the provided bugTypes.",
+          "Each bug must cause incorrect exception handling, lost error information, resource leakage, unexpected exceptions, or another observable defect.",
+          "Do not generate zero, one, two, or more than three bugs.",
+          "Do not count style issues or optional improvements as bugs.",
+          "Implement the bugs directly in the Java code.",
+          "Do not reveal or explain the bugs.",
+          "Use Java 17.",
+          "Generate exactly one complete Java program.",
+          "The program must contain main().",
+          "The program must be self-contained.",
+          "The program must contain 20 to 80 physical source-code lines.",
+          "Do not include comments.",
+          "Do not use //, /*, */, or /** anywhere in the Java source.",
+          "Do not intentionally create syntax errors.",
+          "The program must become correct after fixing all bugs.",
+          "Return only valid JSON.",
+          "Do not use Markdown or code fences."
+        ]
+      }
+    },
+    {
+      "id": "custom_exceptions",
+      "title": "Custom Exceptions",
+      "difficulty": "medium",
+      "prompt": {
+        "topic": "Java Custom Exceptions",
+        "bugTypes": [
+          "Missing Cause Parameter in Constructor",
+          "Incorrect Base Class Selection",
+          "Overusing Checked Exceptions for Logic Flow",
+          "Missing serialVersionUID",
+          "Exposing Sensitive Data in Exception Message"
+        ],
+
+        "rules": [
+          "Generate exactly 3 real bugs.",
+          "Every bug must belong to one of the provided bugTypes.",
+          "Each bug must cause incorrect exception behavior, lost exception information, incorrect error handling, or another observable defect.",
+          "Do not generate zero, one, two, or more than three bugs.",
+          "Do not count style issues or optional improvements as bugs.",
+          "Implement the bugs directly in the Java code.",
+          "Do not reveal or explain the bugs.",
+          "Use Java 17.",
+          "Generate exactly one complete Java program.",
+          "The program must contain main().",
+          "The program must be self-contained.",
+          "The program must contain 20 to 80 physical source-code lines.",
+          "Do not include comments.",
+          "Do not use //, /*, */, or /** anywhere in the Java source.",
+          "Do not intentionally create syntax errors.",
+          "The program must become correct after fixing all bugs.",
+          "Return only valid JSON.",
+          "Do not use Markdown or code fences."
+        ]
+      }
+    }
+  ]
 }
