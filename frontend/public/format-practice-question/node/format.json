@@ -1,0 +1,33 @@
+{
+  "title": "Format",
+  "description": "Coding debugging question with Node.js code, answer and explanation.",
+  "details": [
+    {
+      "label": "Duration",
+      "value": "30 minutes"
+    },
+    {
+      "label": "Questions",
+      "value": "6"
+    },
+    {
+      "label": "Difficulty",
+      "value": "Medium"
+    }
+  ],
+  "sections": [
+    {
+      "title": "Instructions",
+      "items": [
+        {
+          "label": "Language",
+          "value": "Node.js"
+        },
+        {
+          "label": "Task",
+          "value": "Identify the bug, fix the code and explain the change."
+        }
+      ]
+    }
+  ]
+}

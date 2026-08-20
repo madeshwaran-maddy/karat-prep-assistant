@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 
 import AssessmentSidebar from "./AssessmentSidebar";
 import QuestionPanel from "./QuestionPanel";
@@ -13,8 +14,6 @@ import { getNextQuestion } from "./assessmentHelpers";
 import { useCandidateLanguage } from "../../../components/CandidateLanguageProvider";
 
 export default function MockAssessment() {
-  const hasLoadedRef = useRef(false);
-
   const [assessment, setAssessment] =
     useState<AssessmentData | null>(null);
 
@@ -23,18 +22,23 @@ export default function MockAssessment() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { language } = useCandidateLanguage();
+  const [interviewerName, setInterviewerName] = useState("");
+  const [nameSubmitted, setNameSubmitted] = useState(false);
+  const { language, loading: languageLoading } = useCandidateLanguage();
 
   useEffect(() => {
-    if (hasLoadedRef.current) {
+    if (languageLoading || !nameSubmitted) {
       return;
     }
 
-    hasLoadedRef.current = true;
+    setAssessment(null);
+    setSelectedQuestion(null);
+    setError("");
+    setLoading(true);
 
     async function loadAssessment() {
       try {
-        const data = await fetchAssessment(language.id);
+        const data = await fetchAssessment(language.id, interviewerName.trim());
 
         setAssessment(data);
 
@@ -53,7 +57,16 @@ export default function MockAssessment() {
     }
 
     loadAssessment();
-  }, [language.id]);
+  }, [interviewerName, language.id, languageLoading, nameSubmitted]);
+
+  function handleInterviewerSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!interviewerName.trim()) {
+      return;
+    }
+    setError("");
+    setNameSubmitted(true);
+  }
 
   const questions = useMemo(() => {
     if (!assessment) {
@@ -65,6 +78,39 @@ export default function MockAssessment() {
       assessment.round2Question,
     ];
   }, [assessment]);
+
+  if (!nameSubmitted) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+        <form
+          onSubmit={handleInterviewerSubmit}
+          className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
+        >
+          <h1 className="text-xl font-bold text-slate-900">Start Mock Assessment</h1>
+          <p className="mt-2 text-sm text-slate-600">
+            Enter the interviewer name before loading the assessment.
+          </p>
+          <label className="mt-5 block text-sm font-semibold text-slate-700">
+            Interviewer name
+            <input
+              autoFocus
+              value={interviewerName}
+              onChange={(event) => setInterviewerName(event.target.value)}
+              className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              placeholder="Enter interviewer name"
+              required
+            />
+          </label>
+          <button
+            type="submit"
+            className="mt-5 w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700"
+          >
+            Continue
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   function handleNext() {
     if (!selectedQuestion) {

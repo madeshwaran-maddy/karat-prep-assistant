@@ -1,9 +1,14 @@
 import asyncio
 import httpx
 import json
+import os
+from dotenv import load_dotenv
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
-TAGS_URL = "http://localhost:11434/api/tags"
+load_dotenv()
+
+OLLAMA_BASE_URL = os.environ["OLLAMA_URL"].rstrip("/")
+OLLAMA_URL = f"{OLLAMA_BASE_URL}/api/generate"
+TAGS_URL = f"{OLLAMA_BASE_URL}/api/tags"
 MODEL_NAME = "llama3.2:3b"
 
 async def test_ollama():

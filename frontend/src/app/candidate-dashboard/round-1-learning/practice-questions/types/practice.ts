@@ -21,14 +21,9 @@ export interface Topic {
   learningGoals?: string[];
 }
 
-export interface PracticeData {
-  collections: Topic[];
-  exceptions: Topic[];
-  multithreading: Topic[];
-  equalsAndHashCode: Topic[];
-}
+export type PracticeData = Record<string, Topic[]>;
 
 export interface FlatTopic {
-  section: keyof PracticeData;
+  section: string;
   topic: Topic;
 }

@@ -22,6 +22,7 @@ export type AssessmentQuestion = Round1Question | Round2Question;
 
 export interface AssessmentData {
   assessmentId: string;
+  interviewerName: string;
   language: string;
   round1Questions: Round1Question[];
   round2Question: Round2Question;

@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
+import { apiUrl } from "@/lib/api";
 import {
   ConceptProgress,
   UserProgressResponse,
   ProgressStatus,
 } from "./types";
 
-const API_BASE = "http://localhost:8000/api/concept-learning";
+const API_BASE = apiUrl("/api/concept-learning");
 
 export function useConceptProgress() {
   const [progress, setProgress] = useState<Record<string, ConceptProgress>>({});

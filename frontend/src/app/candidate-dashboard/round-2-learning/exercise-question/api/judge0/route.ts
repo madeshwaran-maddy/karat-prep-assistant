@@ -1,18 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import languages from "../../../../../../config/languages.json";
 
-const javaLanguage = languages.languages.find(
-  (language) => language.id === "java" && language.enabled
-);
-
-const JUDGE0_URL =
-  process.env.JUDGE0_URL ||
-  javaLanguage?.judge0URL;
-
-if (!JUDGE0_URL) {
-  throw new Error("Enabled Java language is missing judge0URL in languages.json");
-}
-
 export async function POST(
   request: NextRequest
 ) {
@@ -22,9 +10,20 @@ export async function POST(
 
     const {
       sourceCode,
-      languageId = javaLanguage?.judge0LanguageId,
+      language = "java",
       stdin = "",
     } = body;
+
+    const selectedLanguage = languages.languages.find(
+      (item) => item.id === language && item.enabled
+    );
+
+    if (!selectedLanguage) {
+      return NextResponse.json(
+        { error: `Unsupported language: ${language}` },
+        { status: 400 }
+      );
+    }
 
     if (
       !sourceCode ||
@@ -44,7 +43,7 @@ export async function POST(
     // Create submission
     const submissionResponse =
       await fetch(
-        `${JUDGE0_URL}/submissions?base64_encoded=true&wait=false`,
+        `${selectedLanguage.judge0URL}/submissions?base64_encoded=true&wait=false`,
         {
           method: "POST",
 
@@ -54,7 +53,7 @@ export async function POST(
           },
 
           body: JSON.stringify({
-            language_id: languageId,
+            language_id: selectedLanguage.judge0LanguageId,
 
             source_code:
               Buffer.from(
@@ -123,7 +122,7 @@ export async function POST(
 
       const resultResponse =
         await fetch(
-          `${JUDGE0_URL}/submissions/${token}?base64_encoded=true`,
+          `${selectedLanguage.judge0URL}/submissions/${token}?base64_encoded=true`,
           {
             cache: "no-store",
           }

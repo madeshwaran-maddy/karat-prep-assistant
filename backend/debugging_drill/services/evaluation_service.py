@@ -35,18 +35,32 @@ class EvaluationService:
         drill: dict,
         user_analysis: str,
         original_code: str | None = None,
+        language: str = "java",
     ) -> dict:
         """
         Evaluate the submitted analysis.
         """
 
+        print(
+            f"[evaluation-service] building prompt language={language} "
+            f"analysis_length={len(user_analysis or '')} "
+            f"original_code_length={len(original_code or '')}",
+            flush=True,
+        )
         prompt = self.prompts.build_evaluation_prompt(
             drill=drill,
             user_analysis=user_analysis,
             original_code=original_code,
+            language=language,
         )
 
+        print("[evaluation-service] calling Ollama evaluation", flush=True)
         response = self.ollama.evaluate_solution(prompt)
+        print(
+            f"[evaluation-service] Ollama response type={type(response).__name__} "
+            f"keys={list(response.keys()) if isinstance(response, dict) else 'n/a'}",
+            flush=True,
+        )
 
         # Try to validate the LLM response against our schema. If validation
         # fails because fields are missing or malformed, fall back to a
@@ -56,7 +70,8 @@ class EvaluationService:
         try:
             validated = EvaluationResult.model_validate(response)
             result = validated.model_dump()
-        except Exception:
+        except Exception as exc:
+            print(f"[evaluation-service] response validation fallback: {exc}", flush=True)
             # Best-effort defaults and extraction
             score = int(response.get("score", 0)) if isinstance(response, dict) else 0
             if score < 0:
@@ -94,9 +109,10 @@ class EvaluationService:
         corrected = result.get("correctedCode", "")
         if (not corrected or not str(corrected).strip()) and original_code:
             try:
+                print("[evaluation-service] calling Ollama correction follow-up", flush=True)
                 followup_prompt = (
-                    "You are an expert Java developer. Fix the following Java program so it compiles and addresses the bug(s) described. "
-                    "Return ONLY the complete corrected Java source code file, with no comments and no explanation."
+                    f"You are an expert {language} developer. Fix the following {language} program so it compiles and addresses the bug(s) described. "
+                    "Return ONLY the complete corrected source code file, with no comments and no explanation."
                     "\n\nOriginal Code:\n" + original_code + "\n\n"
                     "Candidate Analysis:\n" + (user_analysis or "")
                 )
@@ -104,8 +120,10 @@ class EvaluationService:
                 fixed = self.ollama.generate_code(followup_prompt)
                 if fixed and fixed.strip():
                     result["correctedCode"] = fixed
-            except Exception:
+                    print("[evaluation-service] correction follow-up completed", flush=True)
+            except Exception as exc:
                 # Swallow errors from follow-up generation; keep existing value.
-                pass
+                print(f"[evaluation-service] correction follow-up failed: {exc}", flush=True)
 
+        print("[evaluation-service] evaluation complete", flush=True)
         return result

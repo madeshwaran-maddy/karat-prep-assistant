@@ -1,6 +1,19 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { apiUrl } from "@/lib/api";
 
 export default function CandidateDashboard() {
+  const [mockEnabled, setMockEnabled] = useState(false);
+
+  useEffect(() => {
+    fetch(apiUrl("/api/me"), { credentials: "include" })
+      .then((response) => response.ok ? response.json() : null)
+      .then((candidate) => setMockEnabled(Boolean(candidate?.mockEnabled)))
+      .catch(() => setMockEnabled(false));
+  }, []);
+
   return (
     <div className="space-y-8">
       <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/40">
@@ -69,12 +82,18 @@ export default function CandidateDashboard() {
               </div>
             </div>
             <div className="mt-6">
-              <Link
-                href="/candidate-dashboard/mock-assesment"
-                className="inline-flex rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
-              >
-                Start Assessment
-              </Link>
+              {mockEnabled ? (
+                <Link
+                  href="/candidate-dashboard/mock-assesment"
+                  className="inline-flex rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                >
+                  Start Assessment
+                </Link>
+              ) : (
+                <span className="inline-flex cursor-not-allowed rounded-full bg-slate-300 px-5 py-3 text-sm font-semibold text-slate-600">
+                  Assessment Disabled
+                </span>
+              )}
             </div>
           </article>
         </div>

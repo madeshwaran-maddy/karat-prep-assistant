@@ -1,9 +1,13 @@
 import json
+import os
 import httpx
+from dotenv import load_dotenv
 
+load_dotenv()
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_TAGS_URL = "http://localhost:11434/api/tags"
+OLLAMA_BASE_URL = os.environ["OLLAMA_URL"].rstrip("/")
+OLLAMA_URL = f"{OLLAMA_BASE_URL}/api/generate"
+OLLAMA_TAGS_URL = f"{OLLAMA_BASE_URL}/api/tags"
 MODEL_NAME = "qwen2.5-coder:3b"  # Changed from llama3.2:3b to match debugging_drill
 
 
@@ -49,6 +53,40 @@ def _sanitize_json_text(text: str) -> str:
     return "".join(result)
 
 
+def _normalize_backtick_code_value(text: str) -> str:
+    """Convert a JavaScript-style backtick code value into a JSON string."""
+    marker = '"code"'
+    marker_index = text.find(marker)
+    if marker_index == -1:
+        return text
+
+    value_start = text.find(":", marker_index + len(marker)) + 1
+    while value_start < len(text) and text[value_start].isspace():
+        value_start += 1
+
+    if value_start >= len(text) or text[value_start] != "`":
+        return text
+
+    content_start = value_start + 1
+    closing_index = content_start
+    while closing_index < len(text):
+        if text[closing_index] == "`" and text[closing_index - 1] != "\\":
+            remainder = text[closing_index + 1:].lstrip()
+            if remainder.startswith("}") or remainder.startswith(","):
+                break
+        closing_index += 1
+
+    if closing_index >= len(text):
+        return text
+
+    code = text[content_start:closing_index]
+    return (
+        text[:value_start]
+        + json.dumps(code)
+        + text[closing_index + 1:]
+    )
+
+
 def _parse_json(response_text: str):
     """Parse Ollama JSON even when the model adds extra prose or raw newlines in strings."""
     text = response_text.strip()
@@ -61,7 +99,7 @@ def _parse_json(response_text: str):
     if text.endswith("```"):
         text = text[:-3]
 
-    text = text.strip()
+    text = _normalize_backtick_code_value(text).strip()
 
     try:
         return json.loads(text)

@@ -52,6 +52,11 @@ export default function CandidateLearningProgressPage() {
         <div>
           <div className={styles.eyebrow}>Candidate learning report</div>
           <h1>Learning Dashboard</h1>
+          <div className={styles.candidateDetails}>
+            <span><strong>Name:</strong> {candidate.name}</span>
+            <span><strong>Language:</strong> {candidate.languageSelected || progress.language}</span>
+            <span><strong>Lead Name:</strong> {candidate.leadName || "Not assigned"}</span>
+          </div>
         </div>
       </div>
 

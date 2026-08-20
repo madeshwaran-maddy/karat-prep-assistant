@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { ExerciseQuestion } from "../lib/questionTypes";
 import ExecutionResult from "./ExecutionResult";
 import { useCandidateLanguage } from "../../../../../components/CandidateLanguageProvider";
+import { apiUrl } from "../../../../../lib/api";
 
 interface Props {
   question: ExerciseQuestion;
@@ -84,7 +85,7 @@ export default function JavaCodeEditor({
     setSubmitting(true);
 
     try {
-      const response = await fetch("http://localhost:8000/api/assessments/submit-exercise-question", {
+      const response = await fetch(apiUrl("/api/assessments/submit-exercise-question"), {
         method: "POST",
         credentials: "include",
         headers: {
@@ -138,7 +139,7 @@ export default function JavaCodeEditor({
 
           body: JSON.stringify({
             sourceCode: code,
-            languageId: language.judge0LanguageId,
+            language: language.id,
             stdin: "",
           }),
         }
@@ -207,14 +208,14 @@ export default function JavaCodeEditor({
         <div className="border-b border-gray-700 bg-[#202938] px-5 py-3">
 
           <span className="font-mono text-sm text-gray-200">
-            Main.java
+            Main.{language.fileExtension}
           </span>
 
         </div>
 
         <Editor
           height="450px"
-          language="java"
+          language={language.monacoLanguage}
           theme="vs-dark"
           value={code}
           onChange={(value) =>

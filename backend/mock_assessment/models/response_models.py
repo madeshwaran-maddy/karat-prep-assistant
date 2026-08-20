@@ -25,5 +25,6 @@ class Round2Question(BaseModel):
 class AssessmentResponse(BaseModel):
     language: str = "java"
     assessmentId: str
+    interviewerName: str
     round1Questions: List[Round1Question]
     round2Question: Round2Question

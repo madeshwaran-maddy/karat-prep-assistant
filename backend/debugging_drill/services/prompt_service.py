@@ -15,23 +15,10 @@ class PromptService:
     """
 
     def __init__(self) -> None:
+        self.prompt_dir = Path(__file__).parent.parent / "prompts"
 
-        prompt_dir = (
-            Path(__file__)
-            .parent.parent
-            / "prompts"
-            / "java"
-        )
-
-        self.generate_template = (
-            prompt_dir
-            / "generate_prompt.txt"
-        )
-
-        self.evaluate_template = (
-            prompt_dir
-            / "evaluate_prompt.txt"
-        )
+    def _template(self, language: str, name: str) -> Path:
+        return self.prompt_dir / language.strip().lower() / name
 
     # ----------------------------------------------------
     # Template Readers
@@ -67,11 +54,10 @@ class PromptService:
     def build_generation_prompt(
         self,
         drill: dict[str, Any],
+        language: str = "java",
     ) -> str:
 
-        template = self._read_template(
-            self.generate_template
-        )
+        template = self._read_template(self._template(language, "generate_prompt.txt"))
 
         prompt = drill["prompt"]
 
@@ -99,11 +85,10 @@ class PromptService:
         drill: dict[str, Any],
         user_analysis: str,
         original_code: str | None = None,
+        language: str = "java",
     ) -> str:
 
-        template = self._read_template(
-            self.evaluate_template
-        )
+        template = self._read_template(self._template(language, "evaluate_prompt.txt"))
 
         prompt = drill["prompt"]
 

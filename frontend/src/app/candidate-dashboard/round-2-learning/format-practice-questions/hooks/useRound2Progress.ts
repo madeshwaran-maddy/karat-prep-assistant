@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { apiUrl } from "@/lib/api";
 
-const API_BASE = "http://localhost:8000/api/practice-questions";
+const API_BASE = apiUrl("/api/practice-questions");
 
 export type ProgressStatus = "not_started" | "in_progress" | "completed";
 

@@ -99,14 +99,15 @@ export default function CandidateReportPage() {
             <thead>
               <tr>
                 <th>Candidate Name</th>
+                <th>Language Selected</th>
                 <th>Start Date</th>
                 <th>Karat Prep Timeline</th>
                 <th>Lead Name</th>
                 <th>Total R1 Attempt</th>
                 <th>Total R2 Attempt</th>
                 <th>Total Mock Attempt</th>
-                <th>View Learning Progress</th>
-                <th>View Assessment Report</th>
+                <th>Learning Progress</th>
+                <th>Assessment Report</th>
               </tr>
             </thead>
 
@@ -114,6 +115,7 @@ export default function CandidateReportPage() {
               {results.map((candidate) => (
                 <tr key={candidate.id}>
                   <td>{candidate.name}</td>
+                  <td>{candidate.languageSelected || "Not assigned"}</td>
                   <td>{candidate.startDate}</td>
                   <td>{candidate.timeline}</td>
                   <td>{candidate.leadName}</td>

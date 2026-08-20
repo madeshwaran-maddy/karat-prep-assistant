@@ -3,7 +3,7 @@ import { FlatTopic, PracticeData } from "../types/practice";
 export function flattenTopics(data: PracticeData): FlatTopic[] {
     const topics: FlatTopic[] = [];
 
-    (Object.keys(data) as (keyof PracticeData)[]).forEach((section) => {
+    Object.keys(data).forEach((section) => {
         const list = data[section];
         list.forEach((topic) => {
             topics.push({
@@ -18,7 +18,7 @@ export function flattenTopics(data: PracticeData): FlatTopic[] {
 
 export function getTopicIndex(
     topics: FlatTopic[],
-    section: keyof PracticeData,
+    section: string,
     topicId: string
 ): number {
     return topics.findIndex(

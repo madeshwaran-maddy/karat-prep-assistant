@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { CandidateLanguageProvider } from "@/components/CandidateLanguageProvider";
+import { apiUrl } from "@/lib/api";
 
 const navItems = [
   { label: "Dashboard", href: "/candidate-dashboard", icon: "🏠" },
@@ -14,6 +16,15 @@ const navItems = [
 
 export default function CandidateDashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [mockEnabled, setMockEnabled] = useState(false);
+
+  useEffect(() => {
+    fetch(apiUrl("/api/me"), { credentials: "include" })
+      .then((response) => response.ok ? response.json() : null)
+      .then((candidate) => setMockEnabled(Boolean(candidate?.mockEnabled)))
+      .catch(() => setMockEnabled(false));
+  }, []);
+
   const hideSidebar =
     pathname?.startsWith("/candidate-dashboard/round-1-learning/") ||
     pathname?.startsWith("/candidate-dashboard/round-2-learning/") ||
@@ -72,6 +83,23 @@ export default function CandidateDashboardLayout({ children }: { children: React
             <nav className="space-y-3">
               {navItems.map((item) => {
                 const isActive = pathname === item.href;
+                const isMockDisabled = item.href === "/candidate-dashboard/mock-assesment" && !mockEnabled;
+
+                if (isMockDisabled) {
+                  return (
+                    <span
+                      key={item.href}
+                      aria-disabled="true"
+                      className="flex w-full cursor-not-allowed items-center gap-3 rounded-3xl px-4 py-3 text-sm font-medium text-slate-400"
+                    >
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-200 text-slate-400">
+                        {item.icon}
+                      </span>
+                      {item.label}
+                    </span>
+                  );
+                }
+
                 return (
                   <Link
                     key={item.href}

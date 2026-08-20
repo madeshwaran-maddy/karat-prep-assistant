@@ -3,6 +3,7 @@ import json
 import os
 import uuid
 from datetime import datetime
+from pathlib import Path
 
 import bcrypt
 from dotenv import load_dotenv
@@ -12,6 +13,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
+load_dotenv(Path(__file__).resolve().parent / ".env")
+
 from debugging_drill.api.routes import router as debugging_router
 from debugging_drill.services.ollama_service import OllamaService
 from mock_assessment.api.routes import router as mock_assessment_router
@@ -19,12 +22,7 @@ from mock_assessment.services.excel_service import get_random_exercise_question
 from concept_learning.routes import router as concept_learning_router
 from practice_question_tracking.routes import router as practice_question_router
 
-load_dotenv()
-
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://postgres:1234@localhost:5432/karat_prep_assistant",
-)
+DATABASE_URL = os.environ["DATABASE_URL"]
 
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -60,6 +58,7 @@ def ensure_schema():
                     email VARCHAR(255) UNIQUE NOT NULL,
                     phone VARCHAR(20),
                     language_selected VARCHAR(255),
+                    mock_enabled BOOLEAN NOT NULL DEFAULT FALSE,
                     password_hash VARCHAR(255),
                     status VARCHAR(50),
                     role VARCHAR(50),
@@ -79,6 +78,15 @@ def ensure_schema():
                 """
                 ALTER TABLE candidates
                 ADD COLUMN IF NOT EXISTS language_selected VARCHAR(255)
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                ALTER TABLE candidates
+                ADD COLUMN IF NOT EXISTS mock_enabled BOOLEAN NOT NULL DEFAULT FALSE
                 """
             )
         )
@@ -125,6 +133,7 @@ def ensure_schema():
                 CREATE TABLE IF NOT EXISTS assessments (
                     id UUID PRIMARY KEY,
                     candidate_id UUID NOT NULL REFERENCES candidates(id),
+                    interviewer_name VARCHAR(255),
                     "attempt_no" INTEGER NOT NULL,
                     round INTEGER NOT NULL,
                     status VARCHAR(50) NOT NULL DEFAULT 'in_progress',
@@ -132,6 +141,15 @@ def ensure_schema():
                     completed_at TIMESTAMP NULL,
                     updated_at TIMESTAMP DEFAULT NOW()
                 )
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                ALTER TABLE assessments
+                ADD COLUMN IF NOT EXISTS interviewer_name VARCHAR(255)
                 """
             )
         )
@@ -318,9 +336,9 @@ app.add_middleware(
     CORSMiddleware,
 
     allow_origins=[
-
-        "http://localhost:3000",
-
+        origin.strip()
+        for origin in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+        if origin.strip()
     ],
 
     allow_credentials=True,
@@ -350,6 +368,7 @@ class CandidateUpdateRequest(BaseModel):
     email: str = Field(..., min_length=3)
     phone: str | None = None
     language_selected: str | None = None
+    mock_enabled: bool = False
     lead_name: str | None = None
     status: str | None = None
     role: str | None = None
@@ -437,6 +456,7 @@ def get_reviewer_candidates():
                     c.email,
                     c.phone,
                       c.language_selected,
+                                        c.mock_enabled,
                     c.created_at,
                     c.start_date,
                     c.karat_prep_timeline,
@@ -449,7 +469,7 @@ def get_reviewer_candidates():
                     COALESCE(SUM(CASE WHEN a.round = 3 THEN 1 ELSE 0 END), 0) AS mock_attempts
                 FROM candidates c
                 LEFT JOIN assessments a ON a.candidate_id = c.id
-                GROUP BY c.id, c.name, c.email, c.phone, c.language_selected, c.created_at, c.start_date, c.karat_prep_timeline, c.karat_assessment_date, c.role, c.lead_name, c.status
+                GROUP BY c.id, c.name, c.email, c.phone, c.language_selected, c.mock_enabled, c.created_at, c.start_date, c.karat_prep_timeline, c.karat_assessment_date, c.role, c.lead_name, c.status
                 ORDER BY c.created_at DESC
                 """
             )
@@ -465,6 +485,7 @@ def get_reviewer_candidates():
                 "email": row["email"],
                 "phone": row["phone"],
                  "languageSelected": row.get("language_selected") or "",
+                "mockEnabled": bool(row.get("mock_enabled")),
                 "startDate": format_date_value(start_date_value),
                 "karatAssessmentDate": format_date_value(row["karat_assessment_date"]),
                 "timeline": row["karat_prep_timeline"] or "",
@@ -493,6 +514,7 @@ def get_reviewer_candidate(candidate_id: str):
                     c.email,
                     c.phone,
                       c.language_selected,
+                                        c.mock_enabled,
                     c.created_at,
                     c.start_date,
                     c.karat_prep_timeline,
@@ -506,7 +528,7 @@ def get_reviewer_candidate(candidate_id: str):
                 FROM candidates c
                 LEFT JOIN assessments a ON a.candidate_id = c.id
                 WHERE c.id::text = :candidate_id
-                GROUP BY c.id, c.name, c.email, c.phone, c.language_selected, c.created_at, c.start_date, c.karat_prep_timeline, c.karat_assessment_date, c.role, c.lead_name, c.status
+                GROUP BY c.id, c.name, c.email, c.phone, c.language_selected, c.mock_enabled, c.created_at, c.start_date, c.karat_prep_timeline, c.karat_assessment_date, c.role, c.lead_name, c.status
                 """
             ),
             {"candidate_id": candidate_id},
@@ -628,6 +650,8 @@ def _progress_topic_rows(overview_rows, progress_rows, kind):
             key = str(row["concept_id"])
         elif kind == "round2_question":
             key = int(row["question_no"])
+        elif kind == "question":
+            key = (str(row["topic_id"]), int(row["question_no"]))
         else:
             key = str(row["topic_id"])
         if key not in progress_by_key or row["status"] == "completed":
@@ -660,20 +684,41 @@ def _progress_topic_rows(overview_rows, progress_rows, kind):
         else:
             topic_id = str(_overview_value(row, "subtopic", "topic_id", "topic", "topic_name", default=""))
             group_name = str(_overview_value(row, "topic", "topic_name", "section", default="Practice Questions"))
-            item_key = topic_id
+            question_no = int(_overview_value(row, "question_no", "question_number", "questionNo", default=0))
+            item_key = (topic_id, question_no) if kind == "question" else topic_id
             progress = progress_by_key.get(item_key)
             item_name = topic_id or str(_overview_value(row, "question_title", "question_name", "title", "name", default="Practice Question"))
 
         topic = grouped.setdefault(group_name, {"name": group_name, "items": []})
-        if any(item["name"] == item_name for item in topic["items"]):
-            continue
-        topic["items"].append({
-            "name": item_name,
-            "completed": bool(progress and progress["status"] == "completed"),
-        })
+        existing_item = next((item for item in topic["items"] if item["name"] == item_name), None)
+        if kind == "question":
+            if existing_item is None:
+                existing_item = {
+                    "name": item_name,
+                    "completed": False,
+                    "_required_questions": set(),
+                    "_completed_questions": set(),
+                }
+                topic["items"].append(existing_item)
+            existing_item["_required_questions"].add(question_no)
+            if progress and progress["status"] == "completed":
+                existing_item["_completed_questions"].add(question_no)
+        elif existing_item is None:
+            topic["items"].append({
+                "name": item_name,
+                "completed": bool(progress and progress["status"] == "completed"),
+            })
 
     topics = []
     for topic in grouped.values():
+        for item in topic["items"]:
+            if kind == "question":
+                item["completed"] = (
+                    bool(item["_required_questions"])
+                    and item["_required_questions"] <= item["_completed_questions"]
+                )
+                del item["_required_questions"]
+                del item["_completed_questions"]
         completed = sum(1 for item in topic["items"] if item["completed"])
         topic["completed"] = completed
         topic["total"] = len(topic["items"])
@@ -684,12 +729,19 @@ def _progress_topic_rows(overview_rows, progress_rows, kind):
 @app.get("/api/reviewer/candidates/{candidate_id}/learning-progress")
 def get_reviewer_learning_progress(candidate_id: str):
     with engine.connect() as connection:
-        candidate_exists = connection.execute(
-            text("SELECT id FROM candidates WHERE id::text = :candidate_id"),
+        candidate = connection.execute(
+            text("SELECT id, language_selected FROM candidates WHERE id::text = :candidate_id"),
             {"candidate_id": candidate_id},
-        ).fetchone()
-        if candidate_exists is None:
+        ).mappings().first()
+        if candidate is None:
             raise HTTPException(status_code=404, detail="Candidate not found.")
+
+        candidate_language = str(candidate.get("language_selected") or "").strip().lower()
+        if not candidate_language:
+            raise HTTPException(
+                status_code=422,
+                detail="Candidate language is not assigned.",
+            )
 
         try:
             overview_rows = connection.execute(
@@ -718,18 +770,25 @@ def get_reviewer_learning_progress(candidate_id: str):
             {"candidate_id": candidate_id},
         ).mappings().all()
 
+    def matches_language(row):
+        overview_language = str(_overview_value(row, "language", default="")).strip().lower()
+        normalize_language = lambda value: value.removesuffix(".js").strip()
+        return normalize_language(overview_language) == normalize_language(candidate_language)
+
+    language_overview_rows = [row for row in overview_rows if matches_language(row)]
+
     round1_concept_rows = [
-        row for row in overview_rows
+        row for row in language_overview_rows
         if int(row["round_no"]) == 1 and str(row["screen"]).lower() == "concepts"
     ]
     round1_question_rows = [
-        row for row in overview_rows
+        row for row in language_overview_rows
         if int(row["round_no"]) == 1
         and str(row["screen"]).lower() == "practice question"
         and str(_overview_value(row, "section", default="")).lower() != "round2"
     ]
     round2_question_rows = [
-        row for row in overview_rows
+        row for row in language_overview_rows
         if int(row["round_no"]) == 2
     ]
 
@@ -751,6 +810,7 @@ def get_reviewer_learning_progress(candidate_id: str):
         }
 
     return {
+        "language": candidate_language,
         "summary": {
             "round1Concepts": metric(concept_topics),
             "round1Practice": metric(round1_topics),
@@ -793,6 +853,7 @@ def update_reviewer_candidate(candidate_id: str, payload: CandidateUpdateRequest
                     email = :email,
                     phone = :phone,
                     language_selected = :language_selected,
+                    mock_enabled = :mock_enabled,
                     lead_name = :lead_name,
                     status = :status,
                     role = :role,
@@ -808,6 +869,7 @@ def update_reviewer_candidate(candidate_id: str, payload: CandidateUpdateRequest
                 "email": payload.email.strip().lower(),
                 "phone": payload.phone.strip() if payload.phone and payload.phone.strip() else None,
                 "language_selected": payload.language_selected.strip() if payload.language_selected and payload.language_selected.strip() else None,
+                "mock_enabled": payload.mock_enabled,
                 "lead_name": payload.lead_name.strip() if payload.lead_name and payload.lead_name.strip() else None,
                 "status": payload.status.strip() if payload.status and payload.status.strip() else "pending",
                 "role": role,
@@ -827,6 +889,7 @@ def update_reviewer_candidate(candidate_id: str, payload: CandidateUpdateRequest
                     c.email,
                     c.phone,
                           c.language_selected,
+                      c.mock_enabled,
                     c.created_at,
                     c.start_date,
                     c.karat_prep_timeline,
@@ -850,6 +913,7 @@ def update_reviewer_candidate(candidate_id: str, payload: CandidateUpdateRequest
         "email": row["email"],
         "phone": row["phone"],
         "languageSelected": row.get("language_selected") or "",
+        "mockEnabled": bool(row.get("mock_enabled")),
         "startDate": format_date_value(row["start_date"] or row["created_at"]),
         "karatAssessmentDate": format_date_value(row["karat_assessment_date"]),
         "timeline": row["karat_prep_timeline"] or "",
@@ -959,7 +1023,7 @@ def get_current_candidate(request: Request):
             row = connection.execute(
                 text(
                     """
-                    SELECT id, name, email, role, language_selected
+                    SELECT id, name, email, role, language_selected, mock_enabled
                     FROM candidates
                     WHERE id::text = :candidate_id
                     """
@@ -976,6 +1040,7 @@ def get_current_candidate(request: Request):
             "email": row["email"],
             "role": row["role"] or "candidate",
             "languageSelected": row["language_selected"] or "java",
+            "mockEnabled": bool(row["mock_enabled"]),
         }
     except HTTPException:
         raise

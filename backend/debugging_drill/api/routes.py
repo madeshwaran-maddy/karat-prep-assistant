@@ -1,9 +1,11 @@
 import json
 import os
 import uuid
+import asyncio
 
 from dotenv import load_dotenv
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from sqlalchemy import create_engine, text
 
 from debugging_drill.models.request_models import (
@@ -33,10 +35,7 @@ router = APIRouter(
 
 load_dotenv()
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://postgres:1234@localhost:5432/karat_prep_assistant",
-)
+DATABASE_URL = os.environ["DATABASE_URL"]
 
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
@@ -196,9 +195,7 @@ def generate_question(
 
     candidate_id = candidate_token.replace("candidate-", "", 1)
 
-    drill = json_service.get_drill(
-        request.id
-    )
+    drill = json_service.get_drill(request.id, request.language)
 
     if drill is None:
         raise HTTPException(
@@ -246,12 +243,17 @@ def generate_question(
         ).scalar()
 
     prompt = prompt_service.build_generation_prompt(
-        drill
+        drill,
+        request.language,
     )
 
-    generated_code = ollama_service.generate_code(
-        prompt
-    )
+    try:
+        generated_code = ollama_service.generate_code(prompt)
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Ollama service is unavailable: {exc}",
+        ) from exc
 
     topic = drill["prompt"]["topic"]
     subtopic = drill.get("title") or drill.get("id") or "General"
@@ -315,6 +317,47 @@ def generate_question(
     )
 
 
+@router.post("/generate-stream")
+async def generate_question_stream(
+    request: GenerateRequest,
+    http_request: Request,
+):
+    """Keep the proxy connection alive while the synchronous Ollama call runs."""
+
+    async def events():
+        task = asyncio.create_task(
+            asyncio.to_thread(generate_question, request, http_request)
+        )
+        yield json.dumps({"status": "generating"}) + "\n"
+
+        while not task.done():
+            await asyncio.sleep(5)
+            if not task.done():
+                yield json.dumps({"status": "waiting"}) + "\n"
+
+        try:
+            result = await task
+            yield json.dumps({"status": "complete", "data": result.model_dump()}) + "\n"
+        except HTTPException as exc:
+            yield json.dumps({
+                "status": "error",
+                "status_code": exc.status_code,
+                "detail": exc.detail,
+            }) + "\n"
+        except Exception as exc:
+            yield json.dumps({
+                "status": "error",
+                "status_code": 500,
+                "detail": "Debugging question generation failed.",
+            }) + "\n"
+
+    return StreamingResponse(
+        events(),
+        media_type="application/x-ndjson",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
 @router.post(
     "/evaluate",
     response_model=EvaluateResponse,
@@ -326,22 +369,33 @@ def evaluate_solution(
     """
     Evaluate candidate solution and persist the result to the evaluations table.
     """
+    print(
+        f"[debugging-evaluate] start id={request.id} language={request.language} "
+        f"question_id={request.questionId} assessment_id={request.assessmentId} "
+        f"analysis_length={len(request.userAnalysis)} code_length={len(request.userCode or '')}",
+        flush=True,
+    )
+
+    print("[debugging-evaluate] ensuring tables", flush=True)
     ensure_question_table()
     ensure_evaluation_table()
 
     candidate_token = (http_request.cookies.get("auth_token") or "").strip()
     if not candidate_token.startswith("candidate-"):
+        print("[debugging-evaluate] candidate authentication failed", flush=True)
         raise HTTPException(status_code=401, detail="Candidate not logged in.")
 
     candidate_id = candidate_token.replace("candidate-", "", 1)
 
     with engine.begin() as connection:
+        print("[debugging-evaluate] checking candidate, assessment, and question", flush=True)
         candidate = connection.execute(
             text("SELECT id FROM candidates WHERE id::text = :candidate_id"),
             {"candidate_id": candidate_id},
         ).fetchone()
 
         if not candidate:
+            print("[debugging-evaluate] candidate not found", flush=True)
             raise HTTPException(status_code=404, detail="Candidate not found.")
 
         assessment_id = request.assessmentId
@@ -361,6 +415,7 @@ def evaluate_solution(
             ).scalar()
 
         if not assessment_id:
+            print("[debugging-evaluate] active assessment not found", flush=True)
             raise HTTPException(status_code=404, detail="No active assessment found for this candidate.")
 
         question_id = request.questionId
@@ -379,28 +434,42 @@ def evaluate_solution(
             ).scalar()
 
         if not question_id:
+            print("[debugging-evaluate] question not found", flush=True)
             raise HTTPException(status_code=404, detail="No question exists for this assessment.")
 
-    drill = json_service.get_drill(
-        request.id
-    )
+    drill = json_service.get_drill(request.id, request.language)
 
     if drill is None:
+        print("[debugging-evaluate] drill not found", flush=True)
         raise HTTPException(
             status_code=404,
             detail="Drill not found",
         )
 
-    result = evaluation_service.evaluate(
-        drill=drill,
-        user_analysis=request.userAnalysis,
-        original_code=request.originalCode,
+    print("[debugging-evaluate] calling evaluation service", flush=True)
+    try:
+        result = evaluation_service.evaluate(
+            drill=drill,
+            user_analysis=request.userAnalysis,
+            original_code=request.originalCode,
+            language=request.language,
+        )
+    except Exception as exc:
+        print(f"[debugging-evaluate] evaluation service failed: {exc}", flush=True)
+        raise
+
+    print(
+        f"[debugging-evaluate] evaluation result score={result.get('score')} "
+        f"suggestions={len(result.get('suggestions', []))} "
+        f"corrected_code_length={len(result.get('correctedCode', '') or '')}",
+        flush=True,
     )
 
     suggestion_text = json.dumps(result.get("suggestions", []))
     evaluation_id = str(uuid.uuid4())
 
     with engine.begin() as connection:
+        print("[debugging-evaluate] persisting evaluation", flush=True)
         connection.execute(
             text(
                 """
@@ -461,6 +530,8 @@ def evaluate_solution(
             },
         )
 
+    print(f"[debugging-evaluate] complete evaluation_id={evaluation_id}", flush=True)
+
     return EvaluateResponse(
         score=result["score"],
         correct=result["correct"],
@@ -468,4 +539,45 @@ def evaluate_solution(
         suggestions=result["suggestions"],
         correctedCode=result["correctedCode"],
         buggyCode=result.get("buggyCode", ""),
+    )
+
+
+@router.post("/evaluate-stream")
+async def evaluate_solution_stream(
+    request: EvaluateRequest,
+    http_request: Request,
+):
+    """Keep the proxy connection alive while Ollama evaluates the solution."""
+
+    async def events():
+        task = asyncio.create_task(
+            asyncio.to_thread(evaluate_solution, request, http_request)
+        )
+        yield json.dumps({"status": "evaluating"}) + "\n"
+
+        while not task.done():
+            await asyncio.sleep(5)
+            if not task.done():
+                yield json.dumps({"status": "waiting"}) + "\n"
+
+        try:
+            result = await task
+            yield json.dumps({"status": "complete", "data": result.model_dump()}) + "\n"
+        except HTTPException as exc:
+            yield json.dumps({
+                "status": "error",
+                "status_code": exc.status_code,
+                "detail": exc.detail,
+            }) + "\n"
+        except Exception:
+            yield json.dumps({
+                "status": "error",
+                "status_code": 500,
+                "detail": "Solution evaluation failed.",
+            }) + "\n"
+
+    return StreamingResponse(
+        events(),
+        media_type="application/x-ndjson",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

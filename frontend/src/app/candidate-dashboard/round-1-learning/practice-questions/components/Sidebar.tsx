@@ -2,6 +2,14 @@
 
 import SidebarSection from "./SidebarSection";
 import usePracticeQuestions from "../hooks/usePracticeQuestions";
+import { PracticeData } from "../types/practice";
+
+function formatSectionTitle(section: string): string {
+  return section
+    .replace(/([A-Z])/g, " $1")
+    .replace(/^./, (character) => character.toUpperCase())
+    .trim();
+}
 
 export default function Sidebar() {
 
@@ -18,29 +26,20 @@ export default function Sidebar() {
           <p className="mt-1 text-sm text-slate-500">{totalQuestions} debugging questions</p>
         </div>
 
-      <SidebarSection
-        title="Collections"
-        section="collections"
-        topics={data.collections}
-      />
+      {Object.entries(data as PracticeData).map(([section, topics]) => {
+        if (topics.length === 0) {
+          return null;
+        }
 
-      <SidebarSection
-        title="Exceptions"
-        section="exceptions"
-        topics={data.exceptions}
-      />
-
-      <SidebarSection
-        title="Multithreading"
-        section="multithreading"
-        topics={data.multithreading}
-      />
-
-      <SidebarSection
-        title="Equals & HashCode"
-        section="equalsAndHashCode"
-        topics={data.equalsAndHashCode}
-      />
+        return (
+          <SidebarSection
+            key={section}
+            title={formatSectionTitle(section)}
+            section={section as keyof PracticeData}
+            topics={topics}
+          />
+        );
+      })}
       </div>
     </aside>
   );

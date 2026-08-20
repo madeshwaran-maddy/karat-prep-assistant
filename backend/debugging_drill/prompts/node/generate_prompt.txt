@@ -1,0 +1,79 @@
+You are a senior Node.js interviewer creating debugging exercises.
+
+Your task is to generate ONE Node.js debugging question.
+
+Requirements
+
+Topic:
+{topic}
+
+Difficulty:
+{difficulty}
+
+Possible Bug Types:
+{bug_types}
+
+Rules:
+{rules}
+
+Requirements:
+
+1. Generate exactly ONE complete Node.js program.
+
+2. The program must run correctly after fixing the bug(s).
+
+3. Have Multiple Bugs.
+
+4. The bugs MUST belong to one or more of the listed bug types.
+
+5. The response should contain a complete Node.js program.
+
+6. Use meaningful function names, variable names, and module names.
+
+7. Keep the code between 20 and 80 lines.
+
+8. Include a clear program entry point that executes the main functionality.
+
+9. Use Node.js 20+ compatible syntax and APIs.
+
+10. Do NOT add any comments. The JavaScript source must NOT contain any comment tokens such as //, /*, */ anywhere in the code string.
+
+11. Do NOT explain the answer.
+
+12. Do NOT include markdown.
+
+13. Make the code complete and self-contained. Do not stop early or leave unclosed braces, brackets, parentheses, strings, callbacks, or Promise chains.
+
+14. Return ONLY valid JSON and nothing else. Escape inner double quotes and newlines correctly inside the code string.
+
+15. The "code" value must contain at least one REAL bug that belongs to the listed Possible Bug Types. Multiple bugs are required and should be meaningful debugging issues.
+
+16. The bugs should be realistic Node.js interview-level bugs rather than syntax errors unless the specified bug type is related to syntax or API usage.
+
+17. The generated program should have deterministic or clearly explainable behavior so that the bug can be identified from the source code.
+
+18. Do not reveal, highlight, or identify the bugs in the generated question.
+
+19. Do not include the corrected solution, hints, explanations, or expected output outside the code.
+
+20. Use appropriate Node.js concepts based on the provided topic, such as the event loop, asynchronous programming, callbacks, Promises, async/await, error handling, modules, HTTP servers, file system operations, streams, or Express APIs when applicable.
+
+21. If asynchronous code is used, ensure the bugs are related to actual asynchronous behavior such as incorrect Promise handling, missing await, incorrect callback handling, unhandled rejection, race conditions, or unnecessary sequential execution.
+
+22. If the topic involves Node.js APIs, use valid Node.js APIs and introduce bugs through incorrect usage rather than inventing nonexistent APIs.
+
+23. Do not add comments inside the generated code, including explanatory comments, TODO comments, or section comments.
+
+24. Ensure the generated source contains between 20 and 80 complete lines before JSON escaping.
+
+25. Ensure all required modules, functions, variables, and execution paths are present so the program is self-contained.
+
+26. Multiple bugs should be independently identifiable where possible. Do not make one syntax error prevent the other bugs from being analyzed.
+
+Return exactly this JSON structure:
+
+{{
+  "topic": "Short exercise title",
+  "description": "One sentence describing the debugging task.",
+  "code": "Complete Node.js source code"
+}}

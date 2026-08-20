@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import CodeEditor from "./CodeEditor";
 import { AssessmentQuestion } from "./mockAssessment";
 import { submitQuestion } from "./mockAssessmentApi";
+import { useCandidateLanguage } from "../../../components/CandidateLanguageProvider";
 
 interface Props {
   assessmentId: string;
@@ -23,6 +24,9 @@ export default function QuestionPanel({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [running, setRunning] = useState(false);
+  const [executionOutput, setExecutionOutput] = useState("");
+  const [executionError, setExecutionError] = useState("");
   const [secondsRemaining, setSecondsRemaining] = useState(
     question.round === 1 ? 4 * 60 : 30 * 60
   );
@@ -34,6 +38,7 @@ export default function QuestionPanel({
   const submitRef = useRef<((automatic?: boolean) => Promise<void>) | null>(null);
   const autoSubmitAttemptedRef = useRef(false);
   const submittingQuestionRef = useRef<string | null>(null);
+  const { language } = useCandidateLanguage();
 
   const questionKey = `${question.round}-${question.questionNo}`;
   const questionSubmitted = submittedQuestionKeys.has(questionKey);
@@ -43,6 +48,8 @@ export default function QuestionPanel({
     setCode(question.code);
     setError("");
     setSuccessMessage("");
+    setExecutionOutput("");
+    setExecutionError("");
     autoSubmitAttemptedRef.current = false;
   }, [question]);
 
@@ -114,7 +121,9 @@ export default function QuestionPanel({
       const response = await submitQuestion(
         assessmentId,
         question.questionNo,
-        codeRef.current
+        codeRef.current,
+        executionError || executionOutput,
+        question.round
       );
 
       if (response?.submitted) {
@@ -144,6 +153,55 @@ export default function QuestionPanel({
       );
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleRun() {
+    if (running) {
+      return;
+    }
+
+    setRunning(true);
+    setExecutionOutput("");
+    setExecutionError("");
+
+    try {
+      const response = await fetch(
+        "/candidate-dashboard/round-2-learning/exercise-question/api/judge0",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sourceCode: codeRef.current,
+            language: language.id,
+            stdin: "",
+          }),
+        }
+      );
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to execute code.");
+      }
+
+      const outputToSave = result.compileOutput
+        ? `Compile output:\n${result.compileOutput}`
+        : result.stderr
+          ? `Runtime error:\n${result.stderr}`
+          : result.stdout || result.message || "Program executed successfully with no output.";
+      setExecutionOutput(result.compileOutput || result.stderr ? "" : outputToSave);
+      setExecutionError(result.compileOutput || result.stderr ? outputToSave : "");
+      await submitQuestion(
+        assessmentId,
+        question.questionNo,
+        codeRef.current,
+        outputToSave,
+        question.round
+      );
+    } catch (err) {
+      setExecutionError(err instanceof Error ? err.message : "Execution failed.");
+    } finally {
+      setRunning(false);
     }
   }
 
@@ -187,13 +245,36 @@ export default function QuestionPanel({
           <span>
             {isRound1
               ? question.fileName
-              : `Question${question.questionNo}.java`}
+              : `Question${question.questionNo}.${language.fileExtension}`}
           </span>
-          <span>Java 17</span>
+          <span>{language.name}</span>
         </div>
 
-        <CodeEditor value={code} onChange={setCode} />
+        <CodeEditor
+          value={code}
+          onChange={setCode}
+          language={language.monacoLanguage}
+        />
       </div>
+
+      {!isRound1 && (
+        <div className="mt-4 rounded-lg border border-slate-200 bg-slate-950 p-4 text-sm text-white">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="font-semibold">Output</span>
+            <button
+              type="button"
+              onClick={handleRun}
+              disabled={running}
+              className="rounded-md bg-emerald-600 px-4 py-2 font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {running ? "Running..." : "Run"}
+            </button>
+          </div>
+          <pre className="min-h-16 whitespace-pre-wrap font-mono text-xs text-slate-200">
+            {executionError || executionOutput || "Run the code to see the output."}
+          </pre>
+        </div>
+      )}
 
       {error && (
         <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">

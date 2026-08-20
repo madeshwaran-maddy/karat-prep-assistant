@@ -1,3 +1,5 @@
+import { apiUrl } from "@/lib/api";
+
 export type AttemptQuestion = {
   id: string;
   questionNo: number;
@@ -27,6 +29,7 @@ export type Candidate = {
   email: string;
   phone: string;
   languageSelected: string;
+  mockEnabled: boolean;
   startDate: string;
   karatAssessmentDate?: string;
   timeline: string;
@@ -43,6 +46,7 @@ export type ProgressItem = { name: string; completed: boolean };
 export type ProgressTopic = { name: string; completed: number; total: number; items: ProgressItem[] };
 export type ProgressMetric = { completed: number; total: number; percentage: number };
 export type LearningProgress = {
+  language: string;
   summary: {
     round1Concepts: ProgressMetric;
     round1Practice: ProgressMetric;
@@ -58,7 +62,7 @@ export type LearningProgress = {
 export const candidates: Candidate[] = [];
 
 export async function fetchCandidates(): Promise<Candidate[]> {
-  const response = await fetch("http://localhost:8000/api/reviewer/candidates");
+  const response = await fetch(apiUrl("/api/reviewer/candidates"));
 
   if (!response.ok) {
     throw new Error("Failed to load reviewer candidates.");
@@ -71,7 +75,7 @@ export async function fetchCandidates(): Promise<Candidate[]> {
 
 export async function fetchCandidate(candidateId: string): Promise<Candidate | null> {
   const response = await fetch(
-    `http://localhost:8000/api/reviewer/candidates/${candidateId}`
+    apiUrl(`/api/reviewer/candidates/${candidateId}`)
   );
 
   if (!response.ok) {
@@ -92,7 +96,7 @@ export async function fetchCandidate(candidateId: string): Promise<Candidate | n
 
 export async function fetchLearningProgress(candidateId: string): Promise<LearningProgress> {
   const response = await fetch(
-    `http://localhost:8000/api/reviewer/candidates/${candidateId}/learning-progress`
+    apiUrl(`/api/reviewer/candidates/${candidateId}/learning-progress`)
   );
 
   if (!response.ok) {

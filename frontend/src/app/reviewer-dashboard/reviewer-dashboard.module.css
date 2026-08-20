@@ -609,6 +609,19 @@
   letter-spacing: -0.4px;
 }
 
+.candidateDetails {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 10px;
+  color: #596579;
+  font-size: 13px;
+}
+
+.candidateDetails strong {
+  color: #213047;
+}
+
 .eyebrow {
   color: #778398;
   font-size: 10px;

@@ -10,18 +10,10 @@ class JsonService:
     """
 
     def __init__(self) -> None:
+        self.data_dir = Path(__file__).parent.parent / "data"
+        self._cache: dict[str, dict[str, Any]] = {}
 
-        self.data_file = (
-            Path(__file__)
-            .parent.parent
-            / "data"
-            / "java"
-            / "drills.json"
-        )
-
-        self._cache = None
-
-    def load(self) -> dict[str, Any]:
+    def load(self, language: str = "java") -> dict[str, Any]:
         """
         Load drills.json.
 
@@ -29,30 +21,33 @@ class JsonService:
         the first read.
         """
 
-        if self._cache is None:
+        language_id = language.strip().lower()
+        if language_id not in self._cache:
+            data_file = self.data_dir / language_id / "drills.json"
 
             with open(
-                self.data_file,
+                data_file,
                 "r",
                 encoding="utf-8",
             ) as file:
 
-                self._cache = json.load(file)
+                self._cache[language_id] = json.load(file)
 
-        return self._cache
+        return self._cache[language_id]
 
-    def reload(self) -> dict[str, Any]:
+    def reload(self, language: str = "java") -> dict[str, Any]:
         """
         Force reload JSON.
         """
 
-        self._cache = None
+        self._cache.pop(language.strip().lower(), None)
 
-        return self.load()
+        return self.load(language)
 
     def get_category(
         self,
         category: str,
+        language: str = "java",
     ) -> list[dict]:
         """
         Return an entire category.
@@ -63,13 +58,14 @@ class JsonService:
             equals_hashCode
         """
 
-        data = self.load()
+        data = self.load(language)
 
         return data.get(category, [])
 
     def get_drill(
         self,
         drill_id: str,
+        language: str = "java",
     ) -> dict | None:
         """
         Find drill by id.
@@ -77,7 +73,7 @@ class JsonService:
         Searches every category.
         """
 
-        data = self.load()
+        data = self.load(language)
 
         for drills in data.values():
 
@@ -99,17 +95,17 @@ class JsonService:
 
     def categories(
         self,
+        language: str = "java",
     ) -> list[str]:
         """
         Return all category names.
         """
 
-        return list(
-            self.load().keys()
-        )
+        return list(self.load(language).keys())
 
     def all_drills(
         self,
+        language: str = "java",
     ) -> list[dict]:
         """
         Flatten every drill into
@@ -118,7 +114,7 @@ class JsonService:
 
         result = []
 
-        for drills in self.load().values():
+        for drills in self.load(language).values():
 
             if isinstance(
                 drills,
@@ -133,14 +129,13 @@ class JsonService:
     def exists(
         self,
         drill_id: str,
+        language: str = "java",
     ) -> bool:
         """
         Returns True if drill exists.
         """
 
         return (
-            self.get_drill(
-                drill_id
-            )
+            self.get_drill(drill_id, language)
             is not None
         )

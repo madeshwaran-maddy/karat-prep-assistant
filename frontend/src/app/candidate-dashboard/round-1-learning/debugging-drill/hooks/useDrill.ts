@@ -200,6 +200,7 @@ export function useDrill() {
 
       const response: EvaluateResponse = await evaluateQuestion({
         id: selectedDrill.id,
+        language: language.id,
         questionId: generatedQuestion.id,
         assessmentId: typeof window !== "undefined" ? localStorage.getItem("debuggingAssessmentId") || undefined : undefined,
         userAnalysis: analysisText,

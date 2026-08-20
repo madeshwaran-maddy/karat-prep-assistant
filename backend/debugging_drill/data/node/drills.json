@@ -1,0 +1,25 @@
+{
+  "Node.js Fundamentals": [
+    {
+      "id": "nodejs",
+      "title": "Node.js",
+      "difficulty": "medium",
+      "prompt": {
+        "topic": "Node.js Event Loop and Asynchronous Programming",
+        "bugTypes": [
+          "Blocking the Event Loop with Synchronous Operations",
+          "Incorrect Promise Handling",
+          "Unhandled Promise Rejection",
+          "Incorrect Async/Await Usage",
+          "Sequential Execution of Independent Async Operations"
+        ],
+        "rules": [
+          "Generate only one bug",
+          "Return JavaScript code only",
+          "Use Node.js 20+",
+          "Don't reveal the answer"
+        ]
+      }
+    }
+  ]
+}

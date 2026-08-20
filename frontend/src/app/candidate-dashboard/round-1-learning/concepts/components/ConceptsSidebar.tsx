@@ -100,7 +100,7 @@ export default function ConceptsSidebar({
           <div>
             <h2 className="text-xl font-bold">Complete Notes</h2>
             <p className="mt-1 text-sm text-slate-500">
-              {totalConcepts} Java 17 chapters
+              {totalConcepts} Chapters
             </p>
           </div>
           {completedCount > 0 && (

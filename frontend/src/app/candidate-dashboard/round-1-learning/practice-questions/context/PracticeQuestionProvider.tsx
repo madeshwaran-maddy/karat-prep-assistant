@@ -61,8 +61,7 @@ function getDefaultTopicSelection(
     data: PracticeData,
     progress: Record<string, QuestionProgress>
 ): { section: keyof PracticeData; topicId: string; questionIndex: number } {
-    // Use the correct section order from PracticeQuestionService
-    const sectionOrder: (keyof PracticeData)[] = ["collections", "exceptions", "multithreading", "equalsAndHashCode"];
+    const sectionOrder = Object.keys(data);
     console.log("📋 Section order:", sectionOrder);
 
     // Step 1: Find first section with any in-progress activity
@@ -109,12 +108,7 @@ function getDefaultTopicSelection(
     });
 
     console.log("✅ Found partial section with progress:", partialSection);
-    console.log("All progress entries by section:", {
-        collections: Object.values(progress).filter(p => p.section === "collections"),
-        exceptions: Object.values(progress).filter(p => p.section === "exceptions"),
-        multithreading: Object.values(progress).filter(p => p.section === "multithreading"),
-        equalsAndHashCode: Object.values(progress).filter(p => p.section === "equalsAndHashCode"),
-    });
+    console.log("All progress entries by section:", progress);
 
     if (partialSection) {
         console.log("✅ Found partial section with progress:", partialSection);
@@ -176,14 +170,14 @@ function getDefaultTopicSelection(
     }
 
     // Step 4: Default to first section and first topic
-    const firstSection = sectionOrder[0];
-    const firstTopic = data[firstSection][0];
+    const firstSection = sectionOrder[0] ?? "";
+    const firstTopic = data[firstSection]?.[0];
 
     console.log("⚠️  Falling back to default:", { section: firstSection, topicId: firstTopic?.id });
 
     return {
         section: firstSection,
-        topicId: firstTopic?.id ?? "list",
+        topicId: firstTopic?.id ?? "",
         questionIndex: 0,
     };
 }
@@ -199,36 +193,26 @@ export default function PracticeQuestionProvider({
 }){
 
     const { language } = useCandidateLanguage();
-    const data = language.id === "java"
-        ? PracticeQuestionService.getData()
-        : {
-            collections: [],
-            exceptions: [],
-            multithreading: [],
-            equalsAndHashCode: [],
-        };
+    const data = PracticeQuestionService.getData(language.id);
 
     const [section,setSection] =
-    useState<keyof PracticeData>(
-        "collections"
-    );
+    useState<string>(() => Object.keys(data)[0] ?? "");
 
     const [topicId,setTopicId] =
-    useState("list");
+    useState(() => data[Object.keys(data)[0] ?? ""]?.[0]?.id ?? "");
 
     const [questionIndex,setQuestionIndex] =
     useState(0);
     const hasAppliedDefaultSelection = useRef(false);
     const lastProgressCountRef = useRef(-1);
+    const lastLanguageIdRef = useRef(language.id);
 
     const topic = useMemo(()=>{
 
-        return PracticeQuestionService.getTopic(
-            section,
-            topicId
-        );
+        return data[section]?.find((item) => item.id === topicId);
 
     },[
+        data,
         section,
         topicId
     ]);
@@ -252,6 +236,12 @@ export default function PracticeQuestionProvider({
 
     // Apply default topic selection once after progress loads
     useEffect(() => {
+        if (lastLanguageIdRef.current !== language.id) {
+            lastLanguageIdRef.current = language.id;
+            hasAppliedDefaultSelection.current = false;
+            lastProgressCountRef.current = -1;
+        }
+
         // Wait until progress is actually loaded (not loading AND has data or is empty)
         if (progressLoading) {
             console.log("Still loading progress, skipping selection...");
@@ -288,7 +278,7 @@ export default function PracticeQuestionProvider({
         }
 
         hasAppliedDefaultSelection.current = true;
-    }, [progressLoading, progress, data, section, topicId, questionIndex]);
+    }, [language.id, progressLoading, progress, data, section, topicId, questionIndex]);
 
     return(
 

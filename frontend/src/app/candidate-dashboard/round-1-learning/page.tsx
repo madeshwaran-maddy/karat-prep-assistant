@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { apiUrl } from "@/lib/api";
 
 export default function RoundOneLearning() {
   const router = useRouter();
 
   const handleDebuggingDrillStart = async () => {
     try {
-      const response = await fetch("http://localhost:8000/api/assessments/start-debugging-drill", {
+      const response = await fetch(apiUrl("/api/assessments/start-debugging-drill"), {
         method: "POST",
         credentials: "include",
       });
@@ -59,7 +60,7 @@ export default function RoundOneLearning() {
           </div>
           <h2 className="mt-6 text-xl font-semibold text-slate-950">Concepts</h2>
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            Java fundamentals and topic explanations completed successfully.
+            Fundamentals and topic explanations completed successfully.
           </p>
           <Link
             href="/candidate-dashboard/round-1-learning/concepts"

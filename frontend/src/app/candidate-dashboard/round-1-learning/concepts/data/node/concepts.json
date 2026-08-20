@@ -1,0 +1,739 @@
+{
+  "node-js": [
+    {
+      "id": "nodejs-fundamentals",
+      "title": "Node.js Fundamentals",
+      "summary": "Understand the Node.js runtime, its event-driven architecture, module system, npm ecosystem, and asynchronous programming model.",
+
+      "learningObjectives": [
+        "Understand what Node.js is and how the runtime works.",
+        "Explain the event loop and non-blocking I/O.",
+        "Understand CommonJS and ES modules.",
+        "Use npm to manage project dependencies.",
+        "Understand callbacks, Promises, and async/await.",
+        "Identify common asynchronous programming mistakes in Node.js."
+      ],
+
+      "explanation": [
+        "In one line: Node.js is a JavaScript runtime that allows JavaScript to execute outside the browser using an event-driven, non-blocking I/O model.",
+        "Node.js is commonly used for APIs, backend services, real-time applications, command-line tools, and microservices.",
+        "Study order: first understand the runtime and event loop, then modules and npm, and finally asynchronous programming."
+      ],
+
+      "detailSections": [
+        {
+          "title": "Node.js Runtime and Event Loop",
+
+          "paragraphs": [
+            "Node.js runs JavaScript outside the browser using the V8 JavaScript engine.",
+            "It uses an event-driven architecture where operations such as file access, network requests, and timers can be handled asynchronously.",
+            "The event loop allows Node.js to continue processing other work instead of blocking the main JavaScript execution thread while I/O operations are waiting."
+          ],
+
+          "note": "Think of Node.js like a restaurant with one main waiter. The waiter accepts orders and delegates slow work such as cooking to other workers instead of standing and waiting. When the work is ready, the result is handled through the event loop."
+        },
+
+        {
+          "title": "Properties you must remember",
+
+          "table": {
+            "title": "Node.js Runtime at a glance",
+
+            "headers": [
+              "Property",
+              "Simple explanation"
+            ],
+
+            "rows": [
+              [
+                "JavaScript engine",
+                "Node.js uses Google's V8 engine to execute JavaScript."
+              ],
+              [
+                "Event-driven",
+                "Operations can trigger callbacks or promise handlers when completed."
+              ],
+              [
+                "Non-blocking I/O",
+                "I/O operations do not normally block JavaScript execution while waiting."
+              ],
+              [
+                "Single JavaScript thread",
+                "JavaScript execution primarily happens on a single event-loop thread."
+              ],
+              [
+                "Event loop",
+                "Coordinates callbacks and asynchronous operations."
+              ],
+              [
+                "I/O focused",
+                "Node.js is particularly effective for applications with many concurrent I/O operations."
+              ]
+            ]
+          }
+        },
+
+        {
+          "title": "How it works internally — step by step",
+
+          "bullets": [
+            "Node.js starts executing JavaScript through the V8 engine.",
+            "Synchronous JavaScript runs on the main execution thread.",
+            "When an asynchronous operation is requested, Node.js delegates the work to the appropriate runtime mechanism.",
+            "The JavaScript thread continues executing other available work.",
+            "When the asynchronous operation completes, its callback or promise continuation becomes eligible for execution.",
+            "The event loop processes available asynchronous work according to its execution phases."
+          ],
+
+          "note": "The event loop is not simply a queue that executes everything immediately. Node.js processes different categories of asynchronous operations through event-loop phases."
+        },
+
+        {
+          "title": "Important APIs and operations",
+
+          "table": {
+            "headers": [
+              "API / operation",
+              "What it does",
+              "Important point"
+            ],
+
+            "rows": [
+              [
+                "setTimeout",
+                "Schedules a callback after a minimum delay.",
+                "The delay does not guarantee exact execution time."
+              ],
+              [
+                "setImmediate",
+                "Schedules a callback for the check phase.",
+                "Useful for certain post-I/O scheduling scenarios."
+              ],
+              [
+                "process.nextTick",
+                "Schedules a callback to run after the current operation.",
+                "Can starve the event loop if used excessively."
+              ],
+              [
+                "fs.readFile",
+                "Reads a file asynchronously.",
+                "Allows other JavaScript work while I/O is pending."
+              ],
+              [
+                "EventEmitter",
+                "Provides an event-based communication mechanism.",
+                "Listeners respond when events are emitted."
+              ]
+            ]
+          }
+        },
+
+        {
+          "title": "When should you use it?",
+
+          "bullets": [
+            "Building REST APIs and backend services.",
+            "Applications with many concurrent network requests.",
+            "Real-time applications such as chat and notification systems.",
+            "Streaming and proxy services.",
+            "Command-line applications and development tools."
+          ]
+        },
+
+        {
+          "title": "Small complete example",
+
+          "code": "const fs = require('fs');\n\nconsole.log('Start');\n\nfs.readFile('data.txt', 'utf8', (err, data) => {\n  if (err) {\n    console.error(err);\n    return;\n  }\n\n  console.log('File content:', data);\n});\n\nconsole.log('End');",
+
+          "paragraphs": [
+            "The file read is asynchronous.",
+            "Node.js starts the file operation and continues executing the next statement.",
+            "Therefore, 'End' can be printed before the file content."
+          ]
+        }
+      ],
+
+      "complexityTable": {
+        "title": "Runtime and asynchronous behavior",
+
+        "headers": [
+          "Operation",
+          "Typical cost",
+          "Why / condition"
+        ],
+
+        "rows": [
+          [
+            "Array access",
+            "O(1)",
+            "JavaScript array indexing"
+          ],
+          [
+            "Object property lookup",
+            "Expected O(1)",
+            "Depends on object representation"
+          ],
+          [
+            "Event callback scheduling",
+            "Runtime-dependent",
+            "Depends on the operation and event-loop state"
+          ],
+          [
+            "File I/O",
+            "I/O-dependent",
+            "Depends on filesystem and operating system"
+          ],
+          [
+            "Network request",
+            "I/O-dependent",
+            "Depends on network and remote service"
+          ]
+        ]
+      },
+
+      "keyConcepts": [
+        "Node.js uses the V8 JavaScript engine.",
+        "Node.js uses an event-driven architecture.",
+        "Non-blocking I/O allows other work to continue while I/O is pending.",
+        "The event loop coordinates asynchronous execution.",
+        "Node.js is especially useful for I/O-heavy applications.",
+        "CPU-heavy synchronous work can block the event loop."
+      ],
+
+      "commonMistakes": [
+        "Assuming Node.js means every operation is automatically asynchronous.",
+        "Blocking the event loop with CPU-heavy synchronous operations.",
+        "Assuming setTimeout executes exactly after the specified delay.",
+        "Using process.nextTick excessively.",
+        "Assuming Node.js cannot perform work concurrently at the runtime level.",
+        "Confusing asynchronous execution with parallel JavaScript execution."
+      ],
+
+      "codeExample": "const http = require('http');\n\nconst server = http.createServer((req, res) => {\n  res.writeHead(200, {\n    'Content-Type': 'text/plain'\n  });\n\n  res.end('Hello from Node.js');\n});\n\nserver.listen(3000, () => {\n  console.log('Server running on port 3000');\n});",
+
+      "debuggingScenario": [
+        "API becomes slow: check for CPU-heavy synchronous code blocking the event loop.",
+        "Requests appear delayed: inspect long-running callbacks and synchronous operations.",
+        "Unexpected execution order: inspect callbacks, promises, timers, and nextTick usage.",
+        "High CPU usage: investigate CPU-intensive operations running on the main JavaScript thread."
+      ],
+
+      "interviewChecklist": [
+        "Can explain what Node.js is.",
+        "Can explain the event loop.",
+        "Can explain blocking versus non-blocking operations.",
+        "Can explain why Node.js is suitable for I/O-heavy applications.",
+        "Can identify code that blocks the event loop."
+      ],
+
+      "officialReferences": [
+        {
+          "title": "Node.js Documentation",
+          "url": "https://nodejs.org/docs/latest/api/"
+        },
+        {
+          "title": "Node.js Event Loop",
+          "url": "https://nodejs.org/en/learn/asynchronous-work/event-loop-timers-and-nexttick"
+        }
+      ]
+    },
+
+    {
+      "id": "nodejs-modules-npm",
+      "title": "Modules and npm",
+
+      "summary": "Understand how Node.js organizes application code using modules and how npm manages packages, dependencies, scripts, and project configuration.",
+
+      "learningObjectives": [
+        "Understand why modules are used in Node.js.",
+        "Understand CommonJS modules.",
+        "Understand ES modules.",
+        "Understand package.json and package-lock.json.",
+        "Install and manage dependencies using npm.",
+        "Understand dependencies and development dependencies."
+      ],
+
+      "explanation": [
+        "In one line: Modules allow Node.js applications to divide code into reusable units, while npm manages packages and project dependencies.",
+        "Node.js supports both CommonJS and ECMAScript modules.",
+        "Study order: first understand modules, then understand package.json, and finally learn npm dependency management."
+      ],
+
+      "detailSections": [
+        {
+          "title": "Simple meaning",
+
+          "paragraphs": [
+            "A module is a reusable unit of code that can expose functionality to other parts of an application.",
+            "CommonJS traditionally uses require and module.exports.",
+            "ES modules use import and export and provide the standardized JavaScript module syntax."
+          ],
+
+          "note": "Think of modules as separate rooms in a house. Each room has a specific responsibility, and the rest of the house uses only the functionality exposed by that room."
+        },
+
+        {
+          "title": "Properties you must remember",
+
+          "table": {
+            "title": "Node.js Modules and npm at a glance",
+
+            "headers": [
+              "Property",
+              "Simple explanation"
+            ],
+
+            "rows": [
+              [
+                "CommonJS",
+                "Uses require and module.exports."
+              ],
+              [
+                "ES Modules",
+                "Uses import and export."
+              ],
+              [
+                "package.json",
+                "Defines project metadata, scripts, and dependencies."
+              ],
+              [
+                "package-lock.json",
+                "Records the dependency tree and resolved versions."
+              ],
+              [
+                "dependencies",
+                "Packages required by the application at runtime."
+              ],
+              [
+                "devDependencies",
+                "Packages primarily required during development."
+              ]
+            ]
+          }
+        },
+
+        {
+          "title": "How modules work — step by step",
+
+          "bullets": [
+            "Create a separate JavaScript file containing reusable functionality.",
+            "Export the required functions, objects, or classes.",
+            "Import the exported functionality into another module.",
+            "Node.js loads and evaluates the module.",
+            "The importing module can use the exported values."
+          ]
+        },
+
+        {
+          "title": "Important npm commands",
+
+          "table": {
+            "headers": [
+              "Command",
+              "What it does",
+              "Important point"
+            ],
+
+            "rows": [
+              [
+                "npm init",
+                "Creates a package.json file.",
+                "Initializes a Node.js project."
+              ],
+              [
+                "npm install",
+                "Installs project dependencies.",
+                "Uses package.json and lock information."
+              ],
+              [
+                "npm install package",
+                "Adds a package dependency.",
+                "Normally updates package.json and lock information."
+              ],
+              [
+                "npm install -D package",
+                "Adds a development dependency.",
+                "Useful for tools such as test runners and linters."
+              ],
+              [
+                "npm run script",
+                "Executes a package.json script.",
+                "Useful for standardizing project commands."
+              ],
+              [
+                "npm uninstall package",
+                "Removes a package.",
+                "Updates dependency configuration."
+              ]
+            ]
+          }
+        },
+
+        {
+          "title": "When should you use it?",
+
+          "bullets": [
+            "Split large applications into maintainable modules.",
+            "Reuse utility functions across multiple files.",
+            "Separate controllers, services, models, and routes.",
+            "Use third-party packages instead of implementing everything from scratch.",
+            "Define repeatable development commands using npm scripts."
+          ]
+        },
+
+        {
+          "title": "Small complete example",
+
+          "code": "// math.js function add(a, b) {\n  return a + b;\n}\n\nmodule.exports = { add };\n\n\n// app.js\nconst { add } = require('./math');\n\nconsole.log(add(10, 20));",
+
+          "paragraphs": [
+            "The math.js file exports the add function.",
+            "The app.js file imports the function using require.",
+            "The function can then be reused by the application."
+          ]
+        }
+      ],
+
+      "complexityTable": {
+        "title": "Module and package behavior",
+
+        "headers": [
+          "Operation",
+          "Typical cost",
+          "Why / condition"
+        ],
+
+        "rows": [
+          [
+            "Local module loading",
+            "Runtime-dependent",
+            "Module resolution and loading"
+          ],
+          [
+            "Function call",
+            "O(1) typical",
+            "Depends on function implementation"
+          ],
+          [
+            "Package installation",
+            "Network/disk-dependent",
+            "Depends on package size and dependency tree"
+          ],
+          [
+            "Dependency resolution",
+            "Dependency-tree dependent",
+            "Depends on project dependency graph"
+          ]
+        ]
+      },
+
+      "keyConcepts": [
+        "Modules help separate application responsibilities.",
+        "CommonJS uses require and module.exports.",
+        "ES modules use import and export.",
+        "package.json defines project configuration.",
+        "package-lock.json records resolved dependency information.",
+        "dependencies and devDependencies serve different purposes."
+      ],
+
+      "commonMistakes": [
+        "Mixing CommonJS and ES module syntax without understanding project configuration.",
+        "Installing development tools as production dependencies unnecessarily.",
+        "Ignoring package-lock.json in applications.",
+        "Using packages without checking their purpose and version.",
+        "Putting too much logic into a single module."
+      ],
+
+      "codeExample": "const express = require('express');\n\nconst app = express();\n\napp.get('/', (req, res) => {\n  res.send('Hello World');\n});\n\napp.listen(3000, () => {\n  console.log('Server started');\n});",
+
+      "debuggingScenario": [
+        "Cannot find module: verify the package name, installation, and module path.",
+        "Import/export error: check whether the project uses CommonJS or ES modules.",
+        "Application works locally but fails in deployment: verify production dependencies.",
+        "Different package versions appear: inspect package-lock.json and dependency tree."
+      ],
+
+      "interviewChecklist": [
+        "Can explain CommonJS versus ES modules.",
+        "Can explain package.json.",
+        "Can explain package-lock.json.",
+        "Can distinguish dependencies and devDependencies.",
+        "Can create and consume a custom Node.js module."
+      ],
+
+      "officialReferences": [
+        {
+          "title": "Node.js Modules",
+          "url": "https://nodejs.org/api/modules.html"
+        },
+        {
+          "title": "Node.js ECMAScript Modules",
+          "url": "https://nodejs.org/api/esm.html"
+        },
+        {
+          "title": "npm Documentation",
+          "url": "https://docs.npmjs.com/"
+        }
+      ]
+    },
+
+    {
+      "id": "nodejs-async-programming",
+      "title": "Asynchronous Programming and Promises",
+
+      "summary": "Understand callbacks, Promises, async/await, error handling, and common patterns for writing reliable asynchronous Node.js applications.",
+
+      "learningObjectives": [
+        "Understand synchronous and asynchronous execution.",
+        "Understand callbacks and callback-based APIs.",
+        "Understand Promise states and chaining.",
+        "Use async/await effectively.",
+        "Handle asynchronous errors correctly.",
+        "Understand sequential versus parallel asynchronous operations."
+      ],
+
+      "explanation": [
+        "In one line: Asynchronous programming allows Node.js applications to start I/O work and continue processing without waiting synchronously for the result.",
+        "Callbacks were widely used in older Node.js APIs, while Promises and async/await provide clearer ways to compose asynchronous operations.",
+        "Study order: understand callbacks first, then Promises, and finally async/await and concurrent execution."
+      ],
+
+      "detailSections": [
+        {
+          "title": "Simple meaning",
+
+          "paragraphs": [
+            "Asynchronous programming allows an operation to complete later while the application continues doing other work.",
+            "A callback is a function invoked after an asynchronous operation completes.",
+            "A Promise represents the eventual completion or failure of an asynchronous operation.",
+            "async/await provides syntax that makes Promise-based code easier to read."
+          ],
+
+          "note": "Think of ordering food at a restaurant. You place the order and continue talking with your friends instead of standing at the kitchen waiting. When the food is ready, the restaurant notifies you."
+        },
+
+        {
+          "title": "Properties you must remember",
+
+          "table": {
+            "title": "Asynchronous Programming at a glance",
+
+            "headers": [
+              "Concept",
+              "Simple explanation"
+            ],
+
+            "rows": [
+              [
+                "Callback",
+                "Function executed after an asynchronous operation completes."
+              ],
+              [
+                "Promise",
+                "Represents a future result or failure."
+              ],
+              [
+                "Pending",
+                "Promise has not completed yet."
+              ],
+              [
+                "Fulfilled",
+                "Promise completed successfully."
+              ],
+              [
+                "Rejected",
+                "Promise completed with an error."
+              ],
+              [
+                "async",
+                "Makes a function return a Promise."
+              ],
+              [
+                "await",
+                "Waits for a Promise result within an async function."
+              ]
+            ]
+          }
+        },
+
+        {
+          "title": "How Promises work internally — step by step",
+
+          "bullets": [
+            "A Promise starts in the pending state.",
+            "The asynchronous operation begins.",
+            "If the operation succeeds, the Promise becomes fulfilled.",
+            "If the operation fails, the Promise becomes rejected.",
+            "then handlers process successful results.",
+            "catch handlers process failures.",
+            "finally can run after either successful or failed completion."
+          ]
+        },
+
+        {
+          "title": "Important methods",
+
+          "table": {
+            "headers": [
+              "Method / operation",
+              "What it does",
+              "Important point"
+            ],
+
+            "rows": [
+              [
+                "then",
+                "Handles a fulfilled Promise.",
+                "Returns another Promise and supports chaining."
+              ],
+              [
+                "catch",
+                "Handles rejection.",
+                "Useful for centralized error handling."
+              ],
+              [
+                "finally",
+                "Runs after completion regardless of outcome.",
+                "Does not normally replace the original result."
+              ],
+              [
+                "Promise.all",
+                "Waits for multiple Promises.",
+                "Rejects when one input Promise rejects."
+              ],
+              [
+                "Promise.allSettled",
+                "Waits for all Promises to settle.",
+                "Provides the result of every operation."
+              ],
+              [
+                "Promise.race",
+                "Settles when the first Promise settles.",
+                "Useful when the first completion matters."
+              ]
+            ]
+          }
+        },
+
+        {
+          "title": "Sequential versus parallel execution",
+
+          "paragraphs": [
+            "Use sequential await when the second operation depends on the result of the first.",
+            "If independent operations can run together, start them together and await their combined results.",
+            "Unnecessarily awaiting independent operations one by one can increase total execution time."
+          ]
+        },
+
+        {
+          "title": "Small complete example",
+
+          "code": "function getUser() {\n  return Promise.resolve({\n    id: 1,\n    name: 'John'\n  });\n}\n\nasync function main() {\n  try {\n    const user = await getUser();\n\n    console.log(user);\n  } catch (error) {\n    console.error('Failed:', error);\n  }\n}\n\nmain();",
+
+          "paragraphs": [
+            "getUser returns a Promise.",
+            "The async main function uses await to obtain the Promise result.",
+            "The try/catch block handles a possible rejection."
+          ]
+        },
+
+        {
+          "title": "Parallel asynchronous operations",
+
+          "code": "async function loadData() {\n  const userPromise = getUser();\n  const ordersPromise = getOrders();\n\n  const [user, orders] = await Promise.all([\n    userPromise,\n    ordersPromise\n  ]);\n\n  return { user, orders };\n}",
+
+          "paragraphs": [
+            "The two independent operations are started before awaiting the results.",
+            "Promise.all waits for both operations.",
+            "This can be more efficient than awaiting each independent operation sequentially."
+          ]
+        }
+      ],
+
+      "complexityTable": {
+        "title": "Asynchronous operations",
+
+        "headers": [
+          "Operation",
+          "Typical cost",
+          "Why / condition"
+        ],
+
+        "rows": [
+          [
+            "Promise creation",
+            "O(1) typical",
+            "Creating Promise state and handlers"
+          ],
+          [
+            "Promise.all",
+            "O(n) coordination",
+            "Coordinates n Promise results"
+          ],
+          [
+            "Sequential async operations",
+            "Sum of operation times",
+            "Each operation waits for the previous one"
+          ],
+          [
+            "Independent parallel async operations",
+            "Approximately max operation time",
+            "Operations overlap while waiting for I/O"
+          ]
+        ]
+      },
+
+      "keyConcepts": [
+        "Callbacks execute after an asynchronous operation completes.",
+        "Promises represent future success or failure.",
+        "Promises have pending, fulfilled, and rejected states.",
+        "async functions return Promises.",
+        "await pauses the async function until the Promise settles.",
+        "Independent asynchronous operations can often be started together.",
+        "Promise.all fails when one of its input Promises rejects."
+      ],
+
+      "commonMistakes": [
+        "Forgetting to handle Promise rejection.",
+        "Using await sequentially for independent operations unnecessarily.",
+        "Mixing callbacks and Promises without a clear reason.",
+        "Forgetting that an async function always returns a Promise.",
+        "Using await outside a valid async/module context.",
+        "Creating unhandled Promise rejections."
+      ],
+
+      "codeExample": "async function fetchUsers() {\n  try {\n    const response = await fetch('https://example.com/users');\n\n    if (!response.ok) {\n      throw new Error(`HTTP error: ${response.status}`);\n    }\n\n    const users = await response.json();\n\n    return users;\n  } catch (error) {\n    console.error('Unable to fetch users:', error);\n    throw error;\n  }\n}\n\nfetchUsers();",
+
+      "debuggingScenario": [
+        "Unhandled rejection: inspect missing catch handling or missing await.",
+        "Slow API response: check whether independent requests are unnecessarily executed sequentially.",
+        "Unexpected result: inspect Promise chaining and returned Promises.",
+        "Error is not caught: verify where the Promise rejection occurs and whether it is awaited or returned."
+      ],
+
+      "interviewChecklist": [
+        "Can explain callbacks.",
+        "Can explain Promise states.",
+        "Can explain async/await.",
+        "Can explain Promise.all versus Promise.allSettled.",
+        "Can identify sequential versus parallel asynchronous operations.",
+        "Can explain asynchronous error handling."
+      ],
+
+      "officialReferences": [
+        {
+          "title": "Node.js Learn — Asynchronous Work",
+          "url": "https://nodejs.org/en/learn/asynchronous-work"
+        },
+        {
+          "title": "MDN — Promise",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise"
+        },
+        {
+          "title": "MDN — async function",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function"
+        }
+      ]
+    }
+  ]
+}

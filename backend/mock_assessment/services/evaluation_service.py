@@ -1,13 +1,16 @@
 import json
+import os
 from pathlib import Path
 
 import httpx
+from dotenv import load_dotenv
 
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 PROMPT_FILE = BASE_DIR / "prompts" / "java" / "evaluate_prompt.txt"
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
+OLLAMA_URL = f'{os.environ["OLLAMA_URL"].rstrip("/")}/api/generate'
 MODEL_NAME = "llama3.2:3b"
 
 
@@ -35,13 +38,14 @@ def build_evaluation_submission(
     candidate_id: str,
     question_id: str,
     user_code: str,
+    user_analysis: str = "",
 ):
     return {
         "assessment_id": assessment_id,
         "candidate_id": candidate_id,
         "question_id": question_id,
         "user_code": user_code or "",
-        "user_analysis": "",
+        "user_analysis": user_analysis or "",
         "score": None,
         "correct": None,
         "explanation": "",

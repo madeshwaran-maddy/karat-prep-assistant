@@ -5,3 +5,5 @@ class EvaluateRequest(BaseModel):
     assessment_id: str
     question_no: int
     user_code: str
+    round: int = 1
+    user_analysis: str = ""

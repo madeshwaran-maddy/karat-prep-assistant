@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 import json
+import os
+import threading
 from typing import Optional
 
 import httpx
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class OllamaService:
     """
     Wrapper around the local Ollama REST API.
-
-    Default endpoint:
-        http://localhost:11434
 
     Default model:
         llama3.2:3b
@@ -19,16 +21,18 @@ class OllamaService:
 
     def __init__(
         self,
-        host: str = "http://localhost:11434",
-        model: str = "qwen2.5-coder:3b",
-        timeout: int = 180,
+        host: str | None = None,
+        model: str | None = None,
+        timeout: int | None = None,
     ):
 
-        self.host = host.rstrip("/")
+        self.host = (host or os.environ["OLLAMA_URL"]).rstrip("/")
 
-        self.model = model
+        self.model = model or os.getenv("OLLAMA_MODEL", "qwen2.5-coder:3b")
 
-        self.timeout = timeout
+        self.timeout = timeout or int(os.getenv("OLLAMA_TIMEOUT_SECONDS", "240"))
+        self.num_predict = int(os.getenv("OLLAMA_NUM_PREDICT", "512"))
+        self._generation_lock = threading.Lock()
 
         self.generate_url = (
             f"{self.host}/api/generate"
@@ -53,12 +57,15 @@ class OllamaService:
             "options": {
 
                 "temperature": temperature,
+                "num_predict": self.num_predict,
 
             },
         }
 
-        try:
+        if not self._generation_lock.acquire(blocking=False):
+            raise RuntimeError("Another Ollama generation is already in progress.")
 
+        try:
             with httpx.Client(
                 timeout=self.timeout
             ) as client:
@@ -94,6 +101,8 @@ class OllamaService:
             raise RuntimeError(
                 f"Ollama error: {ex}"
             )
+        finally:
+            self._generation_lock.release()
 
     # ---------------------------------------------------------
 
@@ -129,15 +138,19 @@ class OllamaService:
         return a safe default.
         """
 
+        print("[ollama-evaluate] request start", flush=True)
         response = self._invoke(
             prompt,
             temperature=0.2,
         )
+        print(f"[ollama-evaluate] response length={len(response)}", flush=True)
 
         parsed = self._parse_json_response(response)
         if parsed is not None:
+            print("[ollama-evaluate] JSON parsed successfully", flush=True)
             return parsed
 
+        print("[ollama-evaluate] JSON parsing failed; returning fallback", flush=True)
         return {
             "score": 0,
             "correct": False,
@@ -213,7 +226,8 @@ class OllamaService:
             while value_start < len(candidate) and candidate[value_start].isspace():
                 value_start += 1
 
-            if value_start < len(candidate) and candidate[value_start] == '"':
+            if value_start < len(candidate) and candidate[value_start] in {'"', '`'}:
+                delimiter = candidate[value_start]
                 content_start = value_start + 1
                 escaped = False
                 index = content_start
@@ -223,7 +237,7 @@ class OllamaService:
                         escaped = False
                     elif char == "\\":
                         escaped = True
-                    elif char == '"':
+                    elif char == delimiter:
                         return candidate[content_start:index]
                     index += 1
                 return candidate[content_start:]

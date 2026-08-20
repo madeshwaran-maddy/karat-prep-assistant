@@ -10,15 +10,15 @@ except ModuleNotFoundError:
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-DRILLS_FILE = BASE_DIR.parent / "debugging_drill" / "data" / "java" / "drills.json"
-PROMPT_FILE = BASE_DIR / "prompts" / "java" / "generate_question_prompt.txt"
 
 
-def load_drills():
-    if not DRILLS_FILE.exists():
-        raise FileNotFoundError(f"drills.json not found: {DRILLS_FILE}")
+def load_drills(language_id: str = "java"):
+    language = get_language(language_id)
+    drills_file = BASE_DIR.parent / "debugging_drill" / "data" / language["id"] / "drills.json"
+    if not drills_file.exists():
+        raise FileNotFoundError(f"drills.json not found: {drills_file}")
 
-    with open(DRILLS_FILE, "r", encoding="utf-8") as file:
+    with open(drills_file, "r", encoding="utf-8") as file:
         data = json.load(file)
 
     drills = []
@@ -42,8 +42,10 @@ def load_drills():
     return drills
 
 
-def load_prompt():
-    with open(PROMPT_FILE, "r", encoding="utf-8") as file:
+def load_prompt(language_id: str = "java"):
+    language = get_language(language_id)
+    prompt_file = BASE_DIR / "prompts" / language["id"] / "generate_question_prompt.txt"
+    with open(prompt_file, "r", encoding="utf-8") as file:
         return file.read()
 
 
@@ -51,31 +53,18 @@ async def generate_round1_questions(count: int = 4, language_id: str = "java"):
     import random
 
     language = get_language(language_id)
-    drills_file = BASE_DIR.parent / "debugging_drill" / "data" / language["id"] / "drills.json"
-    with open(drills_file, "r", encoding="utf-8") as file:
-        source_data = json.load(file)
+    drills = load_drills(language["id"])
 
-    drills = []
-    for collection_items in source_data.values():
-        if isinstance(collection_items, list):
-            for item in collection_items:
-                prompt = item["prompt"]
-                drills.append({
-                    "id": item["id"],
-                    "title": item["title"],
-                    "difficulty": item["difficulty"],
-                    "topic": prompt["topic"],
-                    "bugTypes": prompt["bugTypes"],
-                    "rules": prompt["rules"],
-                })
-
-    if len(drills) < count:
+    if not drills:
         raise ValueError(
-            f"Only {len(drills)} drills are available; {count} are required."
+            f"No drills are available for language '{language['id']}'."
         )
 
-    selected_drills = random.sample(drills, count)
-    prompt_template = load_prompt()
+    selected_drills = random.sample(drills, min(count, len(drills)))
+    if len(selected_drills) < count:
+        selected_drills.extend(random.choices(drills, k=count - len(selected_drills)))
+
+    prompt_template = load_prompt(language["id"])
 
     questions = []
 

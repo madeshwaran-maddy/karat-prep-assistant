@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { apiUrl } from "@/lib/api";
 import {
   QuestionProgress,
   TopicProgressSummary,
   UserPracticeProgressResponse,
 } from "../types/progress";
 
-const API_BASE = "http://localhost:8000/api/practice-questions";
+const API_BASE = apiUrl("/api/practice-questions");
 
 function normalizeQuestionProgress(item: any): QuestionProgress {
   return {

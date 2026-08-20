@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ReviewerShell } from "../components/ReviewerShell";
+import { apiUrl } from "@/lib/api";
 import { Candidate, fetchCandidates } from "../lib/reviewer-data";
 import styles from "../reviewer-dashboard.module.css";
 
@@ -132,6 +133,7 @@ export default function CandidateInformationPage() {
                 email: String(formData.get("email") ?? ""),
                 phone: String(formData.get("phone") ?? ""),
                 language_selected: String(formData.get("language_selected") ?? ""),
+                mock_enabled: formData.get("mock_enabled") === "true",
                 lead_name: String(formData.get("lead_name") ?? ""),
                 start_date: String(formData.get("start_date") ?? ""),
                 karat_assessment_date: String(formData.get("karat_assessment_date") ?? ""),
@@ -142,7 +144,7 @@ export default function CandidateInformationPage() {
 
               try {
                 const response = await fetch(
-                  `http://localhost:8000/api/reviewer/candidates/${candidate.id}`,
+                  apiUrl(`/api/reviewer/candidates/${candidate.id}`),
                   {
                     method: "PUT",
                     headers: {
@@ -166,6 +168,7 @@ export default function CandidateInformationPage() {
                           email: updatedCandidate.email,
                           phone: updatedCandidate.phone ?? "",
                           languageSelected: updatedCandidate.languageSelected ?? "",
+                          mockEnabled: Boolean(updatedCandidate.mockEnabled),
                           startDate: updatedCandidate.startDate,
                           karatAssessmentDate: updatedCandidate.karatAssessmentDate,
                           timeline: updatedCandidate.timeline,
@@ -209,6 +212,14 @@ export default function CandidateInformationPage() {
             <label>
               Lead Name
               <input name="lead_name" defaultValue={candidate.leadName} />
+            </label>
+
+            <label>
+              Mock Enable
+              <select name="mock_enabled" defaultValue={candidate.mockEnabled ? "true" : "false"}>
+                <option value="true">true</option>
+                <option value="false">false</option>
+              </select>
             </label>
 
             <label>

@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 
 import javaData from "./data/java/concepts.json";
+import nodeData from "./data/node/concepts.json";
 import { useCandidateLanguage } from "@/components/CandidateLanguageProvider";
+import { apiUrl } from "@/lib/api";
 
 import ConceptContent from "./components/ConceptContent";
 import ConceptsSidebar from "./components/ConceptsSidebar";
@@ -14,10 +16,12 @@ import styles from "./concepts.module.css";
 
 export default function ConceptsPage() {
   const { language } = useCandidateLanguage();
-  const hasConceptContent = language.id === "java";
-  const data = hasConceptContent
-    ? javaData
-    : { collections: [], exceptions: [], multithreading: [] };
+  const conceptDataByLanguage = {
+    java: javaData,
+    node: nodeData,
+  };
+  const data = conceptDataByLanguage[language.id];
+  const hasConceptContent = Boolean(data);
   const sectionTitleMap: Record<string, string> = {
     collections: "Collections",
     exceptions: "Exception Handling",
@@ -137,7 +141,7 @@ export default function ConceptsPage() {
         data.append("timeSpentSeconds", String(elapsedTime));
 
         navigator.sendBeacon(
-          "http://localhost:8000/api/concept-learning/progress/update/" +
+          apiUrl("/api/concept-learning/progress/update/") +
             selected +
             "?time_spent_seconds=" +
             elapsedTime,
@@ -169,9 +173,22 @@ export default function ConceptsPage() {
   const handleMarkComplete = async () => {
     setIsCompletingConcept(true);
     try {
-      await completeConcept(selected);
+      const completedConcept = await completeConcept(selected);
+
+      if (!completedConcept) {
+        return;
+      }
+
       // Refresh progress to get updated summary
       await fetchAllProgress();
+
+      const currentIndex = concepts.findIndex((concept) => concept.id === selected);
+      const nextConcept = concepts[currentIndex + 1];
+
+      if (nextConcept) {
+        setElapsedTime(0);
+        setSelected(nextConcept.id);
+      }
     } catch (error) {
       console.error("Failed to mark concept as complete:", error);
     } finally {

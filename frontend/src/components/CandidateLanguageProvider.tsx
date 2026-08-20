@@ -12,9 +12,7 @@ import {
   getLanguage,
   LanguageConfig,
 } from "@/config/languages";
-
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000";
+import { apiUrl } from "@/lib/api";
 
 interface CandidateLanguageContextValue {
   language: LanguageConfig;
@@ -47,7 +45,7 @@ export function CandidateLanguageProvider({ children }: { children: ReactNode })
   useEffect(() => {
     async function loadCandidate() {
       try {
-        const response = await fetch(`${BACKEND_URL}/api/me`, {
+        const response = await fetch(apiUrl("/api/me"), {
           credentials: "include",
           cache: "no-store",
         });

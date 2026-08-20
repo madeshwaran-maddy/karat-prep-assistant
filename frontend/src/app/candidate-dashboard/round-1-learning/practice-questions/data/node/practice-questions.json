@@ -1,0 +1,97 @@
+{
+  "Node.js Fundamentals": [
+    {
+      "id": "nodejs-fundamentals",
+      "title": "Node.js Fundamentals",
+      "summary": "Core Node.js concepts covering the runtime, event loop, and asynchronous execution.",
+      "learningGoals": [
+        "Understand how Node.js executes JavaScript.",
+        "Understand the event loop and non-blocking I/O.",
+        "Identify common mistakes that block or misuse asynchronous execution."
+      ],
+      "subtopics": [
+        {
+          "id": "event-loop-and-async",
+          "title": "Event Loop and Asynchronous Programming",
+          "questions": [
+            {
+              "questionNo": 1,
+              "title": "Blocking the Node.js event loop with synchronous code",
+              "difficulty": "Easy",
+              "task": "Identify why the Node.js application becomes unresponsive while processing a large synchronous operation and explain how to avoid blocking the event loop.",
+              "expectedBehavior": "The application should remain responsive while long-running I/O operations are being processed.",
+              "buggyCode": "const fs = require('fs');\n\nconsole.log('Start');\n\nconst data = fs.readFileSync('large-file.txt', 'utf8');\n\nconsole.log('File loaded');\nconsole.log(data.length);\n\nconsole.log('End');",
+              "answer": "The problem is the use of fs.readFileSync(), which performs a synchronous file read and blocks the Node.js event loop until the operation completes.",
+              "explanation": "Node.js executes JavaScript primarily on a single event-loop thread. A synchronous file operation prevents the event loop from processing other callbacks or requests while the file is being read. Use the asynchronous fs.readFile() API instead so other work can continue while the I/O operation is pending.",
+              "hints": [
+                "Look for synchronous APIs in the code.",
+                "Ask whether the event loop can process another request while the file is being read.",
+                "Prefer asynchronous I/O for server-side request handling."
+              ],
+              "keyTakeaways": [
+                "Synchronous I/O can block the Node.js event loop.",
+                "Use asynchronous APIs for potentially slow I/O operations.",
+                "Blocking the event loop can reduce application responsiveness."
+              ],
+              "followUpQuestions": [
+                "What happens if this code runs inside an HTTP request handler?",
+                "What is the difference between readFileSync() and readFile()?",
+                "Can CPU-intensive JavaScript also block the event loop?"
+              ]
+            },
+            {
+              "questionNo": 2,
+              "title": "Unexpected output order with asynchronous execution",
+              "difficulty": "Medium",
+              "task": "Predict the output order of the program and explain why the asynchronous callback executes after the synchronous statements.",
+              "expectedBehavior": "The output should demonstrate that the synchronous statements execute before the asynchronous callback.",
+              "buggyCode": "console.log('Start');\n\nsetTimeout(() => {\n    console.log('Inside timeout');\n}, 0);\n\nconsole.log('End');",
+              "answer": "The output is:\nStart\nEnd\nInside timeout",
+              "explanation": "setTimeout() schedules the callback to execute asynchronously. Even with a delay of 0 milliseconds, the callback does not execute immediately. The current synchronous JavaScript execution completes first, after which the event loop can process the timer callback.",
+              "hints": [
+                "Trace the synchronous statements first.",
+                "A zero-millisecond timer does not mean immediate execution.",
+                "Think about when the event loop gets an opportunity to execute the timer callback."
+              ],
+              "keyTakeaways": [
+                "Synchronous JavaScript runs before queued asynchronous callbacks.",
+                "setTimeout(fn, 0) schedules work rather than executing it immediately.",
+                "The event loop determines when the callback can execute."
+              ],
+              "followUpQuestions": [
+                "What changes if process.nextTick() is added?",
+                "Where does setImmediate() fit into Node.js execution?",
+                "Does setTimeout(fn, 0) guarantee execution after exactly zero milliseconds?"
+              ]
+            },
+            {
+              "questionNo": 3,
+              "title": "Sequential awaits unnecessarily slow independent operations",
+              "difficulty": "Hard",
+              "task": "Identify why two independent asynchronous operations are executed sequentially and refactor the code so that both operations can execute concurrently.",
+              "expectedBehavior": "Independent operations should start without waiting for each other, while the final result should be available only after both operations complete.",
+              "buggyCode": "async function loadData() {\n    const user = await getUser();\n    const orders = await getOrders();\n\n    return {\n        user,\n        orders\n    };\n}",
+              "answer": "The two independent operations are being awaited sequentially. getOrders() does not start until getUser() completes. Start both operations first and use Promise.all() to wait for both results.",
+              "explanation": "When asynchronous operations are independent, awaiting the first operation before starting the second unnecessarily increases total execution time. Promise.all() allows both operations to proceed concurrently and waits until both have completed.",
+              "hints": [
+                "Check whether getUser() and getOrders() depend on each other.",
+                "Start independent Promises before awaiting their results.",
+                "Consider Promise.all() for coordinating multiple independent operations."
+              ],
+              "keyTakeaways": [
+                "Do not unnecessarily serialize independent asynchronous operations.",
+                "Promise.all() can coordinate multiple independent Promises.",
+                "The total wait can be reduced when independent I/O operations overlap."
+              ],
+              "followUpQuestions": [
+                "What happens if getOrders() rejects?",
+                "When should operations intentionally be awaited sequentially?",
+                "What is the difference between Promise.all() and Promise.allSettled()?"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

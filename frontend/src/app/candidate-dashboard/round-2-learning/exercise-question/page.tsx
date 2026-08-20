@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import ExerciseQuestions from "./components/ExerciseQuestions";
 import { ExerciseQuestion } from "./lib/questionTypes";
 import { useCandidateLanguage } from "../../../../components/CandidateLanguageProvider";
+import { apiUrl } from "../../../../lib/api";
 
 export default function ExerciseQuestionsPage() {
   const [question, setQuestion] = useState<ExerciseQuestion | null>(null);
@@ -22,7 +23,7 @@ export default function ExerciseQuestionsPage() {
 
     const loadQuestion = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/api/assessments/start-exercise-question?language=${language.id}`, {
+        const response = await fetch(apiUrl(`/api/assessments/start-exercise-question?language=${language.id}`), {
           method: "POST",
           credentials: "include",
         });

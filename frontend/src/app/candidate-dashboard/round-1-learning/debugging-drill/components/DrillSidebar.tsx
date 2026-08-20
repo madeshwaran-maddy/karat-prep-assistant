@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Drill } from "../types/drill";
 import { loadDrills } from "../services/debuggingApi";
+import { useCandidateLanguage } from "../../../../../components/CandidateLanguageProvider";
 
 interface DrillSidebarProps {
   selectedId?: string;
@@ -13,13 +14,14 @@ export default function DrillSidebar({
   selectedId,
   onSelect,
 }: DrillSidebarProps) {
+  const { language } = useCandidateLanguage();
   const [collections, setCollections] = useState<Record<string, Drill[]>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchDrills() {
       try {
-        const json = await loadDrills();
+        const json = await loadDrills(language.id);
         setCollections(json);
       } catch (error) {
         console.error("Failed to load drills", error);
@@ -29,7 +31,7 @@ export default function DrillSidebar({
     }
 
     fetchDrills();
-  }, []);
+  }, [language.id]);
 
   if (loading) {
     return (

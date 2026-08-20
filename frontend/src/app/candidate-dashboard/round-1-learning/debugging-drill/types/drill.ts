@@ -34,6 +34,7 @@ export interface GenerateResponse {
 
 export interface EvaluateRequest {
   id: string;
+  language?: string;
   questionId?: string;
   assessmentId?: string;
   userAnalysis: string;
