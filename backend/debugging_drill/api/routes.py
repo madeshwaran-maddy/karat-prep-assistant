@@ -8,6 +8,8 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy import create_engine, text
 
+from ai_provider import get_ai_provider
+
 from debugging_drill.models.request_models import (
     GenerateRequest,
     EvaluateRequest,
@@ -248,11 +250,17 @@ def generate_question(
     )
 
     try:
+        print(
+            f"[debugging-generate] provider={ollama_service.provider} "
+            f"model={ollama_service.model} operation=question-generation "
+            f"language={request.language} drill_id={request.id}",
+            flush=True,
+        )
         generated_code = ollama_service.generate_code(prompt)
     except RuntimeError as exc:
         raise HTTPException(
             status_code=503,
-            detail=f"Ollama service is unavailable: {exc}",
+            detail=f"{get_ai_provider()} service is unavailable: {exc}",
         ) from exc
 
     topic = drill["prompt"]["topic"]
@@ -305,7 +313,7 @@ def generate_question(
                 "difficulty": difficulty,
                 "description": description,
                 "code": generated_code,
-                "source": "ollama",
+                "source": get_ai_provider(),
             },
         )
 
@@ -446,7 +454,12 @@ def evaluate_solution(
             detail="Drill not found",
         )
 
-    print("[debugging-evaluate] calling evaluation service", flush=True)
+    print(
+        f"[debugging-evaluate] provider={ollama_service.provider} "
+        f"model={ollama_service.model} operation=evaluation "
+        "calling evaluation service",
+        flush=True,
+    )
     try:
         result = evaluation_service.evaluate(
             drill=drill,

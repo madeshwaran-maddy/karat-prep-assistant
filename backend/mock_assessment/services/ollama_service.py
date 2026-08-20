@@ -3,12 +3,26 @@ import os
 import httpx
 from dotenv import load_dotenv
 
+from ai_provider import (
+    extract_openrouter_text,
+    get_ai_provider,
+    get_openrouter_headers,
+    get_openrouter_model,
+    get_openrouter_url,
+)
+
 load_dotenv()
 
-OLLAMA_BASE_URL = os.environ["OLLAMA_URL"].rstrip("/")
+PROVIDER = get_ai_provider()
+OLLAMA_BASE_URL = os.getenv("OLLAMA_URL", "http://localhost:11434").rstrip("/")
 OLLAMA_URL = f"{OLLAMA_BASE_URL}/api/generate"
 OLLAMA_TAGS_URL = f"{OLLAMA_BASE_URL}/api/tags"
-MODEL_NAME = "qwen2.5-coder:3b"  # Changed from llama3.2:3b to match debugging_drill
+OPENROUTER_URL = get_openrouter_url()
+MODEL_NAME = (
+    get_openrouter_model()
+    if PROVIDER == "openrouter"
+    else os.getenv("OLLAMA_MODEL", "qwen2.5-coder:3b")
+)
 
 
 def _sanitize_json_text(text: str) -> str:
@@ -128,6 +142,11 @@ def _parse_json(response_text: str):
 
 async def _verify_model_exists():
     """Check if the required model is available in Ollama."""
+    if PROVIDER == "openrouter":
+        if not os.getenv("OPENROUTER_API_KEY", "").strip():
+            raise RuntimeError("OPENROUTER_API_KEY is required when AI_PROVIDER=openrouter")
+        return MODEL_NAME
+
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.get(OLLAMA_TAGS_URL)
@@ -168,18 +187,46 @@ async def generate_question(
         rules="\n".join(f"- {rule}" for rule in rules),
     )
 
-    payload = {
-        "model": model,
-        "prompt": prompt,
-        "stream": False,
-    }
+    if PROVIDER == "openrouter":
+        url = OPENROUTER_URL
+        payload = {
+            "model": model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "Return only the requested JSON. Do not expose analysis, "
+                        "reasoning, planning, or meta-commentary."
+                    ),
+                },
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.3,
+            "max_tokens": int(os.getenv("OPENROUTER_MAX_TOKENS", "4096")),
+            "reasoning": {"exclude": True, "max_tokens": 0},
+            "response_format": {"type": "json_object"},
+        }
+        headers = get_openrouter_headers()
+    else:
+        url = OLLAMA_URL
+        payload = {
+            "model": model,
+            "prompt": prompt,
+            "stream": False,
+        }
+        headers = None
 
     async with httpx.AsyncClient(timeout=180.0) as client:
-        response = await client.post(OLLAMA_URL, json=payload)
+        response = await client.post(url, json=payload, headers=headers)
         response.raise_for_status()
         result = response.json()
 
-    generated = _parse_json(result.get("response", ""))
+    response_text = (
+        extract_openrouter_text(result)
+        if PROVIDER == "openrouter"
+        else result.get("response", "")
+    )
+    generated = _parse_json(response_text)
     
     # Validate required fields
     required_fields = ["topic", "description", "code"]
@@ -187,7 +234,7 @@ async def generate_question(
     
     if missing_fields:
         raise ValueError(
-            f"Ollama response missing required fields: {missing_fields}. "
+            f"{PROVIDER} response missing required fields: {missing_fields}. "
             f"Response: {generated}"
         )
     

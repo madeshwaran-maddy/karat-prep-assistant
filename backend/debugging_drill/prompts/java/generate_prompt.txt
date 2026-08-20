@@ -46,20 +46,12 @@ COMMENT REQUIREMENTS
 
 OUTPUT REQUIREMENTS
 
-25. Return ONLY one JSON object.
-26. Do NOT use Markdown.
-27. Do NOT use ``` or code fences.
-28. The JSON object MUST contain exactly these fields:
-   topic
-   description
-   code
-29. The code field MUST contain the complete Java source.
-30. The JSON must be valid JSON.
-31. Newlines inside the code JSON string MUST be represented using JSON escaping.
-32. Double quotes inside the Java source MUST be represented using JSON escaping.
-33. Do NOT manually add extra escaping beyond what valid JSON requires.
-34. Do NOT return the Java code on a single line intentionally. Preserve the original Java line structure using newline characters in the JSON string.
-35. Do NOT include any text before or after the JSON object.
+25. Return ONLY the complete Java source code.
+26. Do NOT return JSON.
+27. Do NOT use Markdown or code fences.
+28. Do NOT include a title, description, explanation, analysis, planning, or any text before or after the Java source.
+29. The first meaningful line MUST be the Java class declaration.
+30. Preserve normal Java line breaks.
 
 FINAL VALIDATION BEFORE OUTPUT
 
@@ -76,13 +68,6 @@ Before returning the answer, internally verify all of the following:
 - Parentheses are balanced.
 - The Java source is complete.
 - The program becomes compilable after fixing the bugs.
-- The output is valid JSON.
-- The response contains nothing except the JSON object.
+- The response contains only compilable Java source code.
 
-Return exactly:
-
-{{
-  "topic": "Short exercise title",
-  "description": "One sentence describing the debugging task.",
-  "code": "Complete Java source code"
-}}
+Return only the complete Java source code.

@@ -2,11 +2,20 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import threading
 from typing import Optional
 
 import httpx
 from dotenv import load_dotenv
+
+from ai_provider import (
+    extract_openrouter_text,
+    get_ai_provider,
+    get_openrouter_headers,
+    get_openrouter_model,
+    get_openrouter_url,
+)
 
 load_dotenv()
 
@@ -26,16 +35,23 @@ class OllamaService:
         timeout: int | None = None,
     ):
 
-        self.host = (host or os.environ["OLLAMA_URL"]).rstrip("/")
+        self.provider = get_ai_provider()
+        self.host = (host or os.getenv("OLLAMA_URL", "http://localhost:11434")).rstrip("/")
 
-        self.model = model or os.getenv("OLLAMA_MODEL", "qwen2.5-coder:3b")
+        if self.provider == "openrouter":
+            self.model = model or get_openrouter_model()
+            self.generate_url = get_openrouter_url()
+        else:
+            self.model = model or os.getenv("OLLAMA_MODEL", "qwen2.5-coder:3b")
+            self.generate_url = f"{self.host}/api/generate"
 
         self.timeout = timeout or int(os.getenv("OLLAMA_TIMEOUT_SECONDS", "240"))
         self.num_predict = int(os.getenv("OLLAMA_NUM_PREDICT", "512"))
         self._generation_lock = threading.Lock()
 
-        self.generate_url = (
-            f"{self.host}/api/generate"
+        print(
+            f"[ai-config] provider={self.provider} model={self.model}",
+            flush=True,
         )
 
     # ---------------------------------------------------------
@@ -46,24 +62,38 @@ class OllamaService:
         temperature: float = 0.3,
     ) -> str:
 
-        payload = {
-
-            "model": self.model,
-
-            "prompt": prompt,
-
-            "stream": False,
-
-            "options": {
-
+        if self.provider == "openrouter":
+            payload = {
+                "model": self.model,
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": (
+                            "Return only the requested output. Do not expose analysis, "
+                            "reasoning, planning, or meta-commentary."
+                        ),
+                    },
+                    {"role": "user", "content": prompt},
+                ],
                 "temperature": temperature,
-                "num_predict": self.num_predict,
-
-            },
-        }
+                "max_tokens": int(os.getenv("OPENROUTER_MAX_TOKENS", "2048")),
+                "reasoning": {"exclude": True},
+            }
+            headers = get_openrouter_headers()
+        else:
+            payload = {
+                "model": self.model,
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "temperature": temperature,
+                    "num_predict": self.num_predict,
+                },
+            }
+            headers = None
 
         if not self._generation_lock.acquire(blocking=False):
-            raise RuntimeError("Another Ollama generation is already in progress.")
+            raise RuntimeError(f"Another {self.provider} generation is already in progress.")
 
         try:
             with httpx.Client(
@@ -73,33 +103,33 @@ class OllamaService:
                 response = client.post(
                     self.generate_url,
                     json=payload,
+                    headers=headers,
                 )
 
                 response.raise_for_status()
 
                 body = response.json()
 
-                return body.get(
-                    "response",
-                    "",
-                ).strip()
+                if self.provider == "openrouter":
+                    return extract_openrouter_text(body)
+                return body.get("response", "").strip()
 
         except httpx.TimeoutException:
 
             raise RuntimeError(
-                "Ollama request timed out."
+                f"{self.provider} request timed out."
             )
 
         except httpx.HTTPStatusError as ex:
 
             raise RuntimeError(
-                f"Ollama returned HTTP {ex.response.status_code}"
+                f"{self.provider} returned HTTP {ex.response.status_code}"
             )
 
         except Exception as ex:
 
             raise RuntimeError(
-                f"Ollama error: {ex}"
+                f"{self.provider} error: {ex}"
             )
         finally:
             self._generation_lock.release()
@@ -121,9 +151,16 @@ class OllamaService:
 
         code_value = self._extract_code_value(response)
         if code_value:
-            return self._normalize_generated_code(code_value)
+            source = self._extract_java_source(code_value)
+        else:
+            source = self._extract_java_source(response)
 
-        return self._normalize_generated_code(response)
+        if not source:
+            raise RuntimeError(
+                f"{self.provider} did not return a complete Java class."
+            )
+
+        return self._normalize_generated_code(source)
 
     # ---------------------------------------------------------
 
@@ -245,6 +282,44 @@ class OllamaService:
             start = candidate.find(marker, start + 1)
 
         return None
+
+    @staticmethod
+    def _extract_java_source(response: str) -> str:
+        """Keep the complete public Java class when the model prefixes reasoning."""
+        class_match = re.search(
+            r"\bpublic\s+class\s+[A-Za-z_$][\w$]*\s*\{",
+            response,
+        )
+        if class_match is None:
+            return ""
+
+        class_start = class_match.start()
+        opening_brace = class_match.end() - 1
+
+        depth = 0
+        in_string = False
+        escaped = False
+        for index in range(opening_brace, len(response)):
+            char = response[index]
+            if in_string:
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == '"':
+                    in_string = False
+                continue
+
+            if char == '"':
+                in_string = True
+            elif char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+                if depth == 0:
+                    return response[class_start:index + 1]
+
+        return response[class_start:]
 
     @staticmethod
     def _normalize_generated_code(code: str) -> str:
@@ -371,6 +446,9 @@ class OllamaService:
         is reachable.
         """
 
+        if self.provider == "openrouter":
+            return bool(os.getenv("OPENROUTER_API_KEY", "").strip())
+
         try:
 
             with httpx.Client(
@@ -392,6 +470,9 @@ class OllamaService:
     def available_models(
         self,
     ) -> list[str]:
+
+        if self.provider == "openrouter":
+            return [self.model] if os.getenv("OPENROUTER_API_KEY", "").strip() else []
 
         try:
 

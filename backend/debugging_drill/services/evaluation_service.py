@@ -54,10 +54,15 @@ class EvaluationService:
             language=language,
         )
 
-        print("[evaluation-service] calling Ollama evaluation", flush=True)
+        print(
+            f"[evaluation-service] provider={self.ollama.provider} "
+            f"model={self.ollama.model} operation=evaluation",
+            flush=True,
+        )
         response = self.ollama.evaluate_solution(prompt)
         print(
-            f"[evaluation-service] Ollama response type={type(response).__name__} "
+            f"[evaluation-service] provider={self.ollama.provider} "
+            f"model={self.ollama.model} response_type={type(response).__name__} "
             f"keys={list(response.keys()) if isinstance(response, dict) else 'n/a'}",
             flush=True,
         )
@@ -103,27 +108,9 @@ class EvaluationService:
             # default to empty string.
             result["buggyCode"] = response.get("buggyCode", "") if isinstance(response, dict) else ""
 
-        # If correctedCode is empty, attempt a focused follow-up request to
-        # produce a corrected Java source. This helps when the evaluator
-        # returned analysis but omitted the corrected code.
-        corrected = result.get("correctedCode", "")
-        if (not corrected or not str(corrected).strip()) and original_code:
-            try:
-                print("[evaluation-service] calling Ollama correction follow-up", flush=True)
-                followup_prompt = (
-                    f"You are an expert {language} developer. Fix the following {language} program so it compiles and addresses the bug(s) described. "
-                    "Return ONLY the complete corrected source code file, with no comments and no explanation."
-                    "\n\nOriginal Code:\n" + original_code + "\n\n"
-                    "Candidate Analysis:\n" + (user_analysis or "")
-                )
-
-                fixed = self.ollama.generate_code(followup_prompt)
-                if fixed and fixed.strip():
-                    result["correctedCode"] = fixed
-                    print("[evaluation-service] correction follow-up completed", flush=True)
-            except Exception as exc:
-                # Swallow errors from follow-up generation; keep existing value.
-                print(f"[evaluation-service] correction follow-up failed: {exc}", flush=True)
+        # This endpoint grades the candidate's written analysis. It must not
+        # trigger a second code-generation request or grade editor code.
+        result["correctedCode"] = ""
 
         print("[evaluation-service] evaluation complete", flush=True)
         return result

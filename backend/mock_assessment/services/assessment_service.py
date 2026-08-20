@@ -2,7 +2,8 @@ import json
 import uuid
 from pathlib import Path
 
-from .ollama_service import generate_question
+from ai_provider import get_ai_provider
+from .ollama_service import MODEL_NAME, generate_question
 try:
     from config.languages import get_language
 except ModuleNotFoundError:
@@ -70,6 +71,12 @@ async def generate_round1_questions(count: int = 4, language_id: str = "java"):
 
     for index, drill in enumerate(selected_drills):
         try:
+            print(
+                f"[mock-assessment-generate] provider={get_ai_provider()} "
+                f"model={MODEL_NAME} operation=question-generation "
+                f"question_no={index + 1} language={language['id']}",
+                flush=True,
+            )
             generated = await generate_question(
                 topic=drill["topic"],
                 difficulty=drill["difficulty"],
@@ -89,7 +96,7 @@ async def generate_round1_questions(count: int = 4, language_id: str = "java"):
                 "code": generated["code"],
                 "fileName": f"MockAssessment_Question{index + 1}.{language['fileExtension']}",
                 "round": 1,
-                "source": "ollama",
+                "source": get_ai_provider(),
                 "_difficulty": drill["difficulty"],
                 "_bugTypes": drill["bugTypes"],
                 "_rules": drill["rules"],

@@ -17,6 +17,7 @@ load_dotenv(Path(__file__).resolve().parent / ".env")
 
 from debugging_drill.api.routes import router as debugging_router
 from debugging_drill.services.ollama_service import OllamaService
+from ai_provider import get_ai_provider
 from mock_assessment.api.routes import router as mock_assessment_router
 from mock_assessment.services.excel_service import get_random_exercise_question
 from concept_learning.routes import router as concept_learning_router
@@ -285,9 +286,11 @@ async def lifespan(app: FastAPI):
 
     ensure_schema()
 
+    provider = get_ai_provider()
+
     if ollama_service.health():
 
-        print("✓ Ollama server is reachable")
+        print(f"✓ {provider} provider is reachable")
 
         models = ollama_service.available_models()
 
@@ -297,11 +300,11 @@ async def lifespan(app: FastAPI):
 
         else:
 
-            print("⚠ No models installed.")
+            print(f"⚠ No models available for {provider}.")
 
     else:
 
-        print("⚠ Ollama server is NOT running.")
+        print(f"⚠ {provider} provider is not available.")
 
     yield
 
