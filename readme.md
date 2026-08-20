@@ -242,4 +242,4 @@ cd backend
 venv\Scripts\activate.bat - Access Virtual Machine
 uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
-API Key : OPENROUTER_API_KEY_REMOVED
+API Key : Key
