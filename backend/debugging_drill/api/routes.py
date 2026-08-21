@@ -184,10 +184,16 @@ def generate_question(
     """
     Generate one debugging question and persist it to the questions table.
     """
+    print(
+        f"[debugging-generate] start language={request.language} drill_id={request.id}",
+        flush=True,
+    )
     try:
         get_language(request.language)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    print("[debugging-generate] language validated", flush=True)
 
     ensure_question_table()
 
@@ -204,6 +210,12 @@ def generate_question(
             status_code=404,
             detail="Drill not found",
         )
+
+    print(
+        f"[debugging-generate] drill loaded topic={drill['prompt']['topic']} "
+        f"difficulty={drill.get('difficulty')}",
+        flush=True,
+    )
 
     with engine.begin() as connection:
         candidate = connection.execute(
@@ -244,9 +256,20 @@ def generate_question(
             {"assessment_id": assessment_id},
         ).scalar()
 
+    print(
+        f"[debugging-generate] assessment ready assessment_id={assessment_id} "
+        f"question_no={next_question_no}",
+        flush=True,
+    )
+
     prompt = prompt_service.build_generation_prompt(
         drill,
         request.language,
+    )
+
+    print(
+        f"[debugging-generate] prompt built length={len(prompt)}",
+        flush=True,
     )
 
     try:
@@ -257,6 +280,10 @@ def generate_question(
             flush=True,
         )
         generated_code = ollama_service.generate_code(prompt)
+        print(
+            f"[debugging-generate] AI response parsed code_length={len(generated_code)}",
+            flush=True,
+        )
     except RuntimeError as exc:
         raise HTTPException(
             status_code=503,
@@ -317,6 +344,12 @@ def generate_question(
             },
         )
 
+    print(
+        f"[debugging-generate] question persisted question_id={question_id} "
+        f"assessment_id={assessment_id}",
+        flush=True,
+    )
+
     return GenerateResponse(
         id=question_id,
         topic=topic,
@@ -333,6 +366,11 @@ async def generate_question_stream(
     """Keep the proxy connection alive while the synchronous Ollama call runs."""
 
     async def events():
+        print(
+            f"[debugging-generate-stream] start language={request.language} "
+            f"drill_id={request.id}",
+            flush=True,
+        )
         task = asyncio.create_task(
             asyncio.to_thread(generate_question, request, http_request)
         )
@@ -345,14 +383,28 @@ async def generate_question_stream(
 
         try:
             result = await task
+            print(
+                f"[debugging-generate-stream] complete question_id={result.id}",
+                flush=True,
+            )
             yield json.dumps({"status": "complete", "data": result.model_dump()}) + "\n"
         except HTTPException as exc:
+            print(
+                f"[debugging-generate-stream] HTTP error status={exc.status_code} "
+                f"detail={exc.detail}",
+                flush=True,
+            )
             yield json.dumps({
                 "status": "error",
                 "status_code": exc.status_code,
                 "detail": exc.detail,
             }) + "\n"
         except Exception as exc:
+            print(
+                f"[debugging-generate-stream] unexpected error type={type(exc).__name__} "
+                f"detail={exc}",
+                flush=True,
+            )
             yield json.dumps({
                 "status": "error",
                 "status_code": 500,

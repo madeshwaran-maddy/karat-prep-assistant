@@ -1,0 +1,8 @@
+backend/.env
+backend/.env.example
+
+# env files (can opt-in for committing if needed)
+.env*
+.env
+.env.local
+*.env

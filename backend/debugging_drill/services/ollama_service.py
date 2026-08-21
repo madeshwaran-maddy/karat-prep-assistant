@@ -92,6 +92,12 @@ class OllamaService:
             }
             headers = None
 
+        print(
+            f"[ai-request] provider={self.provider} model={self.model} "
+            f"prompt_length={len(prompt)} temperature={temperature}",
+            flush=True,
+        )
+
         if not self._generation_lock.acquire(blocking=False):
             raise RuntimeError(f"Another {self.provider} generation is already in progress.")
 
@@ -111,8 +117,16 @@ class OllamaService:
                 body = response.json()
 
                 if self.provider == "openrouter":
-                    return extract_openrouter_text(body)
-                return body.get("response", "").strip()
+                    result = extract_openrouter_text(body)
+                else:
+                    result = body.get("response", "").strip()
+
+                print(
+                    f"[ai-response] provider={self.provider} status={response.status_code} "
+                    f"response_length={len(result)}",
+                    flush=True,
+                )
+                return result
 
         except httpx.TimeoutException:
 
@@ -121,9 +135,10 @@ class OllamaService:
             )
 
         except httpx.HTTPStatusError as ex:
-
+            provider_detail = ex.response.text.strip()
             raise RuntimeError(
                 f"{self.provider} returned HTTP {ex.response.status_code}"
+                + (f": {provider_detail}" if provider_detail else "")
             )
 
         except Exception as ex:

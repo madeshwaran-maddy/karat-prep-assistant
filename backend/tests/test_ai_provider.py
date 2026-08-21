@@ -15,12 +15,12 @@ class AiProviderTests(unittest.TestCase):
             os.environ.pop("AI_PROVIDER", None)
             self.assertEqual(get_ai_provider(), "ollama")
 
-    def test_openrouter_model_defaults_to_nemotron(self):
+    def test_openrouter_model_defaults_to_coding_model(self):
         with patch.dict(os.environ, {}, clear=False):
             os.environ.pop("OPENROUTER_MODEL", None)
             self.assertEqual(
                 get_openrouter_model(),
-                "nvidia/nemotron-3-super-120b-a12b:free",
+                "cohere/north-mini-code:free",
             )
 
     def test_extract_openrouter_chat_content(self):
