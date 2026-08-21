@@ -73,6 +73,8 @@ CREATE DATABASE karat_prep_assistant;
 
 The backend creates and updates the application tables automatically when it starts.
 
+Refer database-schema.md for tables used in this application.
+
 ### 3. Configure the backend
 
 Copy the example environment file and edit it with values for your machine. Do not commit `backend/.env` or real credentials.

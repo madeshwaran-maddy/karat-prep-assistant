@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 
 import javaData from "./data/java/concepts.json";
 import nodeData from "./data/node/concepts.json";
@@ -28,21 +28,24 @@ export default function ConceptsPage() {
     multithreading: "Multithreading",
   };
 
-  const sections: ConceptSection[] = Object.entries(data as Record<string, any[]>)
-    .filter(([, concepts]) => Array.isArray(concepts))
-    .map(([id, concepts]) => ({
-      id: id as keyof typeof data,
-      title: sectionTitleMap[id] ??
-        id
-          .replace(/([A-Z])/g, " $1")
-          .replace(/^./, (char) => char.toUpperCase())
-          .trim(),
-      concepts: concepts as ConceptSection["concepts"],
-    }));
+  const { sections, concepts } = useMemo(() => {
+    const sections: ConceptSection[] = Object.entries(data as Record<string, any[]>)
+      .filter(([, concepts]) => Array.isArray(concepts))
+      .map(([id, concepts]) => ({
+        id: id as keyof typeof data,
+        title: sectionTitleMap[id] ??
+          id
+            .replace(/([A-Z])/g, " $1")
+            .replace(/^./, (char) => char.toUpperCase())
+            .trim(),
+        concepts: concepts as ConceptSection["concepts"],
+      }));
 
-  const concepts = sections.flatMap((section) => section.concepts);
+    return { sections, concepts: sections.flatMap((section) => section.concepts) };
+  }, [data]);
 
   const [selected, setSelected] = useState(concepts[0]?.id ?? "");
+  const initializedLanguageRef = useRef<string | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isCompletingConcept, setIsCompletingConcept] = useState(false);
 
@@ -63,9 +66,11 @@ export default function ConceptsPage() {
 
   // Update selected concept after progress is loaded
   useEffect(() => {
-    if (loading || Object.keys(progress).length === 0) {
+    if (loading || initializedLanguageRef.current === language.id) {
       return;
     }
+
+    initializedLanguageRef.current = language.id;
 
     // Find first concept with "in_progress" status
     const inProgressConcept = concepts.find(
@@ -89,7 +94,7 @@ export default function ConceptsPage() {
 
     // Default to first concept if all are completed
     setSelected(concepts[0]?.id ?? "");
-  }, [progress, loading, concepts]);
+  }, [progress, loading, concepts, language.id]);
 
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const previousConceptRef = useRef<string>(selected);

@@ -7287,5 +7287,803 @@
         }
       ]
     }
+  ],
+  "designPatterns": [
+    {
+      "id": "singleton",
+      "title": "Singleton Design Pattern",
+      "summary": "The Singleton pattern ensures that a class has one controlled instance and provides a common access point to that instance.",
+      "learningObjectives": [
+        "Understand the purpose and structure of the Singleton pattern.",
+        "Know how private constructors and static access control instance creation.",
+        "Compare eager, lazy, synchronized, double-checked locking, and enum Singleton implementations.",
+        "Understand thread-safety and serialization concerns.",
+        "Recognize when Singleton is useful and when dependency injection is a better choice."
+      ],
+      "explanation": [
+        "In one line: Singleton restricts a class to one controlled instance and provides a global access point to it.",
+        "The pattern is useful when exactly one shared object should coordinate a resource or service, such as configuration, logging, or a registry.",
+        "The important part is not simply making a static object. The class must control construction so callers cannot freely create additional instances.",
+        "Study order: first understand the purpose, then the implementation choices, then thread safety, and finally common design problems."
+      ],
+      "detailSections": [
+        {
+          "title": "Simple meaning",
+          "paragraphs": [
+            "Normally, Java allows a class to be instantiated many times using new. Singleton changes this by making the constructor inaccessible to outside code and exposing one controlled instance.",
+            "A typical Singleton has a private constructor, a private static instance field, and a public static method such as getInstance() that returns the instance.",
+            "The Singleton instance can be created eagerly when the class is initialized or lazily when it is first requested."
+          ],
+          "note": "Think of a building with one security control room. Many employees can access the control room, but the building should not create a separate control room for every employee."
+        },
+        {
+          "title": "Properties you must remember",
+          "table": {
+            "title": "Singleton at a glance",
+            "headers": [
+              "Property",
+              "Simple explanation"
+            ],
+            "rows": [
+              [
+                "Instance count",
+                "The design intends to provide one controlled instance."
+              ],
+              [
+                "Constructor",
+                "Usually private so external code cannot call new."
+              ],
+              [
+                "Access",
+                "A static method commonly provides access to the instance."
+              ],
+              [
+                "Creation",
+                "Can be eager or lazy."
+              ],
+              [
+                "Thread safety",
+                "Lazy initialization must be designed carefully when multiple threads can call getInstance()."
+              ],
+              [
+                "Inheritance",
+                "Singleton inheritance can complicate the one-instance guarantee."
+              ],
+              [
+                "Serialization",
+                "Default Java serialization can create another instance unless handled explicitly."
+              ]
+            ]
+          }
+        },
+        {
+          "title": "Main implementation forms",
+          "paragraphs": [
+            "There is no single implementation that is best for every situation. Choose based on initialization requirements, thread safety, serialization, and simplicity."
+          ],
+          "table": {
+            "headers": [
+              "Implementation",
+              "Rule",
+              "Best use"
+            ],
+            "rows": [
+              [
+                "Eager Singleton",
+                "Instance is created when the class is initialized.",
+                "Simple Singleton where early creation is acceptable."
+              ],
+              [
+                "Lazy Singleton",
+                "Instance is created on the first getInstance() call.",
+                "When creation should be delayed."
+              ],
+              [
+                "Synchronized accessor",
+                "getInstance() is synchronized.",
+                "Simple thread-safe lazy implementation."
+              ],
+              [
+                "Double-checked locking",
+                "Checks the instance before and inside synchronization.",
+                "Lazy creation with reduced synchronization overhead."
+              ],
+              [
+                "Initialization-on-demand holder",
+                "Nested holder class initializes the instance when accessed.",
+                "Clean lazy and thread-safe implementation."
+              ],
+              [
+                "Enum Singleton",
+                "A single enum constant represents the instance.",
+                "Simple robust Singleton with serialization support."
+              ]
+            ]
+          }
+        },
+        {
+          "title": "How it works internally — step by step",
+          "bullets": [
+            "The constructor is private, preventing external code from directly calling new Singleton().",
+            "A static field holds the controlled instance.",
+            "getInstance() exposes the instance to callers.",
+            "With eager initialization, the instance is created during class initialization.",
+            "With lazy initialization, the instance is created when getInstance() is first called.",
+            "For lazy Singleton implementations accessed by multiple threads, synchronization or another safe initialization mechanism is required.",
+            "Double-checked locking requires the instance field to be volatile so that publication is safe.",
+            "The holder idiom uses Java class initialization guarantees to achieve lazy thread-safe initialization without explicit synchronization."
+          ],
+          "note": "Singleton is primarily about controlling object creation. A static field alone does not prevent other code from constructing additional objects if the constructor remains accessible."
+        },
+        {
+          "title": "Important methods and concepts",
+          "table": {
+            "headers": [
+              "Method / concept",
+              "What it does",
+              "Important point"
+            ],
+            "rows": [
+              [
+                "private constructor",
+                "Prevents normal external construction.",
+                "Core part of the Singleton structure."
+              ],
+              [
+                "getInstance()",
+                "Returns the controlled instance.",
+                "Usually static."
+              ],
+              [
+                "static instance field",
+                "Stores the Singleton instance.",
+                "Should not be exposed for uncontrolled replacement."
+              ],
+              [
+                "volatile",
+                "Provides visibility and safe publication for double-checked locking.",
+                "Required in the standard double-checked locking pattern."
+              ],
+              [
+                "readResolve()",
+                "Can preserve Singleton identity during deserialization.",
+                "Relevant to Serializable Singleton implementations."
+              ]
+            ]
+          }
+        },
+        {
+          "title": "When should you use it?",
+          "paragraphs": [
+            "Use it when:"
+          ],
+          "bullets": [
+            "Exactly one coordinated instance is a real domain requirement.",
+            "The object represents a shared resource or registry.",
+            "Centralized access is useful and the lifecycle is intentionally controlled.",
+            "You need a single configuration or application-level coordinator."
+          ],
+          "note": "Avoid or rethink it when: the Singleton is mainly being used to avoid passing dependencies. In application code, dependency injection is often easier to test and gives better control over object lifetimes."
+        },
+        {
+          "title": "Small complete example",
+          "paragraphs": [
+            "The initialization-on-demand holder approach provides lazy initialization while relying on Java class initialization for thread safety."
+          ],
+          "codeExample": "class AppConfig {\n    private AppConfig() {\n    }\n\n    private static class Holder {\n        private static final AppConfig INSTANCE = new AppConfig();\n    }\n\n    public static AppConfig getInstance() {\n        return Holder.INSTANCE;\n    }\n\n    public String getEnvironment() {\n        return \"production\";\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        AppConfig first = AppConfig.getInstance();\n        AppConfig second = AppConfig.getInstance();\n\n        System.out.println(first == second); // true\n        System.out.println(first.getEnvironment());\n    }\n}"
+        },
+        {
+          "title": "Karat interview answer in 30 seconds",
+          "paragraphs": [
+            "Singleton restricts a class to one controlled instance and provides a common access point. The constructor is normally private and the instance is stored statically. For eager creation, initialization is simple. For lazy creation, I need to consider thread safety; the holder idiom is a clean option, while double-checked locking requires volatile. I would also consider whether dependency injection is a better design than introducing global state."
+          ],
+          "bullets": [
+            "Can explain why the constructor is private.",
+            "Can compare eager and lazy initialization.",
+            "Can explain thread-safe lazy initialization.",
+            "Can explain why volatile is needed for double-checked locking.",
+            "Can identify Singleton's testing and global-state drawbacks."
+          ],
+          "note": "Start with the object-creation problem, explain the implementation, state the thread-safety consideration, and finish with the dependency-injection alternative."
+        }
+      ],
+      "complexityTable": {
+        "title": "Behavior and implementation cost",
+        "headers": [
+          "Operation",
+          "Typical cost",
+          "Why / condition"
+        ],
+        "rows": [
+          [
+            "getInstance()",
+            "O(1)",
+            "Returns an already-created reference."
+          ],
+          [
+            "First lazy initialization",
+            "O(1)",
+            "Creates one object; actual constructor cost depends on the object."
+          ],
+          [
+            "Synchronized getInstance()",
+            "O(1)",
+            "Synchronization adds coordination overhead."
+          ],
+          [
+            "Holder-based access",
+            "O(1)",
+            "Class initialization occurs only when the holder is accessed."
+          ]
+        ]
+      },
+      "keyConcepts": [
+        "Singleton controls instance creation rather than merely exposing a static object.",
+        "Private constructor prevents normal external construction.",
+        "Lazy initialization requires thread-safety consideration.",
+        "Double-checked locking requires volatile.",
+        "Enum Singleton provides a concise serialization-safe approach.",
+        "Singleton can introduce global state and make testing harder."
+      ],
+      "commonMistakes": [
+        "Leaving the constructor public.",
+        "Implementing lazy initialization without considering multiple threads.",
+        "Using double-checked locking without volatile.",
+        "Assuming static automatically means Singleton.",
+        "Ignoring serialization when the Singleton is Serializable.",
+        "Using Singleton everywhere instead of dependency injection."
+      ],
+      "codeExample": "class AppConfig {\n    private AppConfig() {\n    }\n\n    private static class Holder {\n        private static final AppConfig INSTANCE = new AppConfig();\n    }\n\n    public static AppConfig getInstance() {\n        return Holder.INSTANCE;\n    }\n}",
+      "debuggingScenario": [
+        "Multiple instances are created: check whether the constructor is accessible or whether the instance field can be replaced.",
+        "Two threads create different instances: check the lazy initialization synchronization strategy.",
+        "Double-checked locking is broken: verify that the instance field is volatile.",
+        "A second instance appears after deserialization: handle readResolve or use an enum-based implementation."
+      ],
+      "interviewChecklist": [
+        "Can explain the Singleton intent.",
+        "Can implement eager and lazy Singleton.",
+        "Can explain thread-safe lazy initialization.",
+        "Can explain double-checked locking and volatile.",
+        "Can discuss Singleton drawbacks and dependency injection."
+      ],
+      "officialReferences": [
+        {
+          "title": "Java Language Specification — Class Initialization",
+          "url": "https://docs.oracle.com/javase/specs/jls/se17/html/jls-12.html"
+        },
+        {
+          "title": "Enum Types",
+          "url": "https://docs.oracle.com/javase/tutorial/java/javaOO/enum.html"
+        }
+      ]
+    },
+    {
+      "id": "prototype",
+      "title": "Prototype Design Pattern",
+      "summary": "The Prototype pattern creates new objects by copying an existing configured object instead of constructing every object from scratch.",
+      "learningObjectives": [
+        "Understand the purpose and structure of the Prototype pattern.",
+        "Distinguish shallow copying from deep copying.",
+        "Understand Java clone(), Cloneable, copy constructors, and copy methods.",
+        "Recognize when copying an existing object is better than rebuilding it.",
+        "Identify common bugs involving shared mutable state."
+      ],
+      "explanation": [
+        "In one line: Prototype creates a new object by copying an existing prototype object.",
+        "The pattern is useful when object construction is expensive, complicated, or requires many configuration steps.",
+        "Instead of repeatedly creating and configuring an object from the beginning, the program keeps a configured prototype and copies it whenever a similar object is required.",
+        "Study order: first understand cloning, then shallow versus deep copy, then Java implementation choices, and finally mutable-state bugs."
+      ],
+      "detailSections": [
+        {
+          "title": "Simple meaning",
+          "paragraphs": [
+            "Suppose an application repeatedly creates reports with the same layout, formatting, and configuration. Instead of rebuilding every report from scratch, it can keep one configured report as a prototype and create copies.",
+            "The important question is what gets copied. A shallow copy copies the object's field values, including references. A deep copy also creates independent copies of mutable referenced objects.",
+            "Prototype therefore becomes especially important when objects contain nested mutable state."
+          ],
+          "note": "Think of a document template. You keep one fully configured template and make a copy whenever a new document is needed."
+        },
+        {
+          "title": "Properties you must remember",
+          "table": {
+            "title": "Prototype at a glance",
+            "headers": [
+              "Property",
+              "Simple explanation"
+            ],
+            "rows": [
+              [
+                "Purpose",
+                "Create similar objects by copying an existing object."
+              ],
+              [
+                "Construction",
+                "Avoids repeating complex initialization."
+              ],
+              [
+                "Shallow copy",
+                "Copies field values; referenced mutable objects may remain shared."
+              ],
+              [
+                "Deep copy",
+                "Creates independent copies of relevant nested mutable state."
+              ],
+              [
+                "Java clone()",
+                "Object.clone() performs a field-level copy when cloning is supported."
+              ],
+              [
+                "Copy constructor",
+                "Explicitly creates a new object from another object."
+              ],
+              [
+                "Copy method",
+                "A domain-specific method such as copy() can make copying rules explicit."
+              ]
+            ]
+          }
+        },
+        {
+          "title": "Main implementation forms",
+          "paragraphs": [
+            "Java provides several ways to implement Prototype-like behavior. The design should make the copy semantics clear rather than relying blindly on Object.clone()."
+          ],
+          "table": {
+            "headers": [
+              "Implementation",
+              "Rule",
+              "Best use"
+            ],
+            "rows": [
+              [
+                "Cloneable + clone()",
+                "Uses Object.clone() for field-level copying.",
+                "Existing codebases where clone semantics are already established."
+              ],
+              [
+                "Copy constructor",
+                "Constructor receives another instance and copies required state.",
+                "Explicit and readable domain models."
+              ],
+              [
+                "Copy method",
+                "Method such as copy() or duplicate() creates the new object.",
+                "When domain-specific copy behavior is useful."
+              ],
+              [
+                "Serialization-based copy",
+                "Serializes and deserializes an object graph.",
+                "Occasional deep-copy utility when serialization is appropriate."
+              ]
+            ]
+          }
+        },
+        {
+          "title": "How it works internally — step by step",
+          "bullets": [
+            "A prototype object is created and configured.",
+            "The prototype is retained as the source object.",
+            "A caller requests a copy rather than constructing a completely new object.",
+            "The copy operation creates a separate top-level object.",
+            "Primitive fields and immutable references can normally be reused safely.",
+            "Mutable referenced objects require special attention because shallow copying may leave them shared.",
+            "A deep-copy implementation recursively creates independent mutable state where required.",
+            "The copied object can then be customized without modifying the prototype."
+          ],
+          "note": "The most important Prototype interview question is usually shallow copy versus deep copy. A new top-level object does not automatically mean that its entire object graph is independent."
+        },
+        {
+          "title": "Important methods and concepts",
+          "table": {
+            "headers": [
+              "Method / concept",
+              "What it does",
+              "Important point"
+            ],
+            "rows": [
+              [
+                "clone()",
+                "Creates a field-level copy through Object.clone().",
+                "The class must support cloning appropriately."
+              ],
+              [
+                "Cloneable",
+                "Marker interface indicating clone support.",
+                "It does not itself define a clone method."
+              ],
+              [
+                "copy constructor",
+                "Builds a new object from an existing object.",
+                "Makes copy rules explicit."
+              ],
+              [
+                "deep copy",
+                "Copies nested mutable state.",
+                "Prevents unintended sharing."
+              ],
+              [
+                "shallow copy",
+                "Copies references as references.",
+                "Nested mutable objects may remain shared."
+              ]
+            ]
+          }
+        },
+        {
+          "title": "When should you use it?",
+          "paragraphs": [
+            "Use it when:"
+          ],
+          "bullets": [
+            "Creating an object from scratch requires expensive or complicated initialization.",
+            "Many objects share the same base configuration.",
+            "A preconfigured object is easier to copy than reconstruct.",
+            "The object graph has well-defined copy semantics."
+          ],
+          "note": "Avoid or rethink it when: the object contains resources such as sockets, database connections, threads, or other state that should not simply be copied."
+        },
+        {
+          "title": "Small complete example",
+          "paragraphs": [
+            "A copy constructor makes the copy semantics explicit and allows the mutable list to be copied independently."
+          ],
+          "codeExample": "import java.util.*;\n\nclass Report {\n    private String title;\n    private List<String> sections;\n\n    Report(String title, List<String> sections) {\n        this.title = title;\n        this.sections = new ArrayList<>(sections);\n    }\n\n    Report(Report other) {\n        this.title = other.title;\n        this.sections = new ArrayList<>(other.sections);\n    }\n\n    public void addSection(String section) {\n        sections.add(section);\n    }\n\n    @Override\n    public String toString() {\n        return title + \" -> \" + sections;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Report prototype = new Report(\n            \"Monthly Report\",\n            List.of(\"Summary\", \"Revenue\")\n        );\n\n        Report copy = new Report(prototype);\n        copy.addSection(\"Expenses\");\n\n        System.out.println(prototype);\n        System.out.println(copy);\n    }\n}"
+        },
+        {
+          "title": "Karat interview answer in 30 seconds",
+          "paragraphs": [
+            "Prototype creates new objects by copying an existing configured object. It is useful when construction is expensive or complicated. In Java I prefer explicit copy constructors or copy methods because they make shallow versus deep-copy behavior clear. clone() can also be used, but Object.clone() performs field-level copying, so nested mutable objects may remain shared unless explicitly copied."
+          ],
+          "bullets": [
+            "Can define Prototype clearly.",
+            "Can explain shallow versus deep copy.",
+            "Can explain why mutable nested state is dangerous.",
+            "Can implement a copy constructor.",
+            "Can compare copy constructors with clone()."
+          ],
+          "note": "Start with the expensive-construction problem, explain the copy operation, distinguish shallow and deep copying, and finish with a mutable-state example."
+        }
+      ],
+      "complexityTable": {
+        "title": "Copy behavior and cost",
+        "headers": [
+          "Operation",
+          "Typical cost",
+          "Why / condition"
+        ],
+        "rows": [
+          [
+            "Top-level shallow copy",
+            "O(f)",
+            "Copies f fields/references."
+          ],
+          [
+            "Deep copy",
+            "O(n)",
+            "Depends on the number of objects in the copied graph."
+          ],
+          [
+            "Copying a list",
+            "O(n)",
+            "Element references are copied into the new list."
+          ],
+          [
+            "Prototype lookup",
+            "O(1)",
+            "If prototypes are stored in a HashMap by key."
+          ]
+        ]
+      },
+      "keyConcepts": [
+        "Prototype creates objects from existing objects.",
+        "Shallow copy creates a new top-level object but may share nested mutable state.",
+        "Deep copy creates independent copies of required mutable state.",
+        "Cloneable is a marker interface.",
+        "Object.clone() performs field-level copying.",
+        "Copy constructors and copy methods make domain copy rules explicit."
+      ],
+      "commonMistakes": [
+        "Assuming clone() automatically performs a deep copy.",
+        "Sharing mutable lists or maps between prototype and copy.",
+        "Copying resources such as connections or threads as if they were normal data.",
+        "Using a shallow copy when independent nested state is required.",
+        "Changing the copied object and accidentally modifying the prototype."
+      ],
+      "codeExample": "class Report {\n    private String title;\n    private List<String> sections;\n\n    Report(String title, List<String> sections) {\n        this.title = title;\n        this.sections = new ArrayList<>(sections);\n    }\n\n    Report(Report other) {\n        this.title = other.title;\n        this.sections = new ArrayList<>(other.sections);\n    }\n}",
+      "debuggingScenario": [
+        "Prototype changes when copy changes: check whether mutable fields are shared.",
+        "Nested object changes affect both objects: replace shallow reference copying with a deep copy where required.",
+        "CloneNotSupportedException appears: verify the cloning design and Cloneable contract.",
+        "Copied resource behaves incorrectly: identify resources that should be recreated instead of copied."
+      ],
+      "interviewChecklist": [
+        "Can explain Prototype intent.",
+        "Can distinguish shallow and deep copying.",
+        "Can implement a copy constructor.",
+        "Can explain Cloneable and Object.clone().",
+        "Can identify shared mutable state bugs."
+      ],
+      "officialReferences": [
+        {
+          "title": "Object.clone() API",
+          "url": "https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html#clone()"
+        },
+        {
+          "title": "Cloneable API",
+          "url": "https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Cloneable.html"
+        }
+      ]
+    },
+    {
+      "id": "abstract-factory",
+      "title": "Abstract Factory Design Pattern",
+      "summary": "The Abstract Factory pattern provides an interface for creating families of related objects without exposing their concrete implementation classes.",
+      "learningObjectives": [
+        "Understand the purpose and structure of Abstract Factory.",
+        "Understand products, concrete products, factories, and concrete factories.",
+        "Create related object families without coupling client code to concrete classes.",
+        "Understand how Abstract Factory works with interfaces and dependency injection.",
+        "Compare Abstract Factory with Factory Method and Builder."
+      ],
+      "explanation": [
+        "In one line: Abstract Factory creates families of related objects without requiring client code to know their concrete classes.",
+        "The pattern is useful when an application needs multiple related products that must work together, such as a Windows UI family or a Mac UI family.",
+        "The client depends on product interfaces and an abstract factory interface. A concrete factory decides which compatible product implementations are created.",
+        "Study order: first understand the product family, then the factory structure, then the compatibility benefit, and finally compare it with other creational patterns."
+      ],
+      "detailSections": [
+        {
+          "title": "Simple meaning",
+          "paragraphs": [
+            "Imagine a UI application that supports two themes: Windows and Mac. Each theme requires a compatible Button and Checkbox.",
+            "Instead of letting application code directly create WindowsButton, WindowsCheckbox, MacButton, or MacCheckbox, the application asks a factory for a Button and Checkbox.",
+            "The selected concrete factory creates the complete compatible family."
+          ],
+          "note": "Think of a furniture factory that produces a matching family of Chair, Sofa, and Table. If you choose the modern factory, all products belong to the modern family rather than accidentally mixing incompatible styles."
+        },
+        {
+          "title": "Properties you must remember",
+          "table": {
+            "title": "Abstract Factory at a glance",
+            "headers": [
+              "Property",
+              "Simple explanation"
+            ],
+            "rows": [
+              [
+                "Purpose",
+                "Create families of related objects."
+              ],
+              [
+                "Client dependency",
+                "Client depends on interfaces rather than concrete product classes."
+              ],
+              [
+                "Abstract factory",
+                "Declares methods for creating each product type."
+              ],
+              [
+                "Concrete factory",
+                "Creates one compatible product family."
+              ],
+              [
+                "Abstract products",
+                "Interfaces representing product types."
+              ],
+              [
+                "Concrete products",
+                "Specific implementations belonging to a product family."
+              ],
+              [
+                "Compatibility",
+                "Concrete factories ensure related products come from the same family."
+              ]
+            ]
+          }
+        },
+        {
+          "title": "Main participants",
+          "paragraphs": [
+            "Abstract Factory becomes easier to understand when the roles are separated."
+          ],
+          "table": {
+            "headers": [
+              "Participant",
+              "Responsibility",
+              "Example"
+            ],
+            "rows": [
+              [
+                "AbstractFactory",
+                "Declares product creation methods.",
+                "GUIFactory"
+              ],
+              [
+                "ConcreteFactory",
+                "Creates a compatible family.",
+                "WindowsFactory"
+              ],
+              [
+                "AbstractProduct",
+                "Defines the product contract.",
+                "Button"
+              ],
+              [
+                "ConcreteProduct",
+                "Implements the product contract.",
+                "WindowsButton"
+              ],
+              [
+                "Client",
+                "Uses product interfaces and factory interface.",
+                "Application UI code"
+              ]
+            ]
+          }
+        },
+        {
+          "title": "How it works internally — step by step",
+          "bullets": [
+            "The application defines interfaces for related product types.",
+            "An abstract factory defines creation methods for those product interfaces.",
+            "Each concrete factory implements the abstract factory.",
+            "A concrete factory creates products from one compatible family.",
+            "The client receives the factory and asks it for products.",
+            "The client works only with product interfaces.",
+            "Changing the product family usually requires changing the factory selection rather than rewriting every product creation call.",
+            "Adding a completely new product type requires changes to the abstract factory and all concrete factories."
+          ],
+          "note": "Abstract Factory makes it easy to switch product families but makes adding a new product type more expensive because every factory must know how to create that new product."
+        },
+        {
+          "title": "Important methods",
+          "table": {
+            "headers": [
+              "Method / concept",
+              "What it does",
+              "Important point"
+            ],
+            "rows": [
+              [
+                "createButton()",
+                "Creates the Button product.",
+                "Returns the abstract product type."
+              ],
+              [
+                "createCheckbox()",
+                "Creates the Checkbox product.",
+                "Keeps product family creation together."
+              ],
+              [
+                "Abstract factory interface",
+                "Defines the family creation contract.",
+                "Client depends on this abstraction."
+              ],
+              [
+                "Concrete factory",
+                "Creates matching concrete products.",
+                "Encapsulates concrete class selection."
+              ],
+              [
+                "Product interface",
+                "Defines behavior available to the client.",
+                "Hides concrete implementation."
+              ]
+            ]
+          }
+        },
+        {
+          "title": "When should you use it?",
+          "paragraphs": [
+            "Use it when:"
+          ],
+          "bullets": [
+            "You need multiple related products that must be compatible.",
+            "The application supports multiple product families.",
+            "Client code should not depend on concrete product implementations.",
+            "You expect product families to change independently from client logic."
+          ],
+          "note": "Avoid or rethink it when: there is only one unrelated product type or the application does not have a meaningful family of related products. A simpler Factory Method may be enough."
+        },
+        {
+          "title": "Small complete example",
+          "paragraphs": [
+            "The client creates a compatible Button and Checkbox through one factory without directly depending on Windows or Mac concrete classes."
+          ],
+          "codeExample": "interface Button {\n    void render();\n}\n\ninterface Checkbox {\n    void render();\n}\n\ninterface GUIFactory {\n    Button createButton();\n    Checkbox createCheckbox();\n}\n\nclass WindowsButton implements Button {\n    public void render() {\n        System.out.println(\"Windows Button\");\n    }\n}\n\nclass WindowsCheckbox implements Checkbox {\n    public void render() {\n        System.out.println(\"Windows Checkbox\");\n    }\n}\n\nclass MacButton implements Button {\n    public void render() {\n        System.out.println(\"Mac Button\");\n    }\n}\n\nclass MacCheckbox implements Checkbox {\n    public void render() {\n        System.out.println(\"Mac Checkbox\");\n    }\n}\n\nclass WindowsFactory implements GUIFactory {\n    public Button createButton() {\n        return new WindowsButton();\n    }\n\n    public Checkbox createCheckbox() {\n        return new WindowsCheckbox();\n    }\n}\n\nclass MacFactory implements GUIFactory {\n    public Button createButton() {\n        return new MacButton();\n    }\n\n    public Checkbox createCheckbox() {\n        return new MacCheckbox();\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        GUIFactory factory = new WindowsFactory();\n\n        Button button = factory.createButton();\n        Checkbox checkbox = factory.createCheckbox();\n\n        button.render();\n        checkbox.render();\n    }\n}"
+        },
+        {
+          "title": "Karat interview answer in 30 seconds",
+          "paragraphs": [
+            "Abstract Factory provides an interface for creating families of related objects. The client depends on the factory and product interfaces, while concrete factories create compatible concrete products. For example, WindowsFactory creates WindowsButton and WindowsCheckbox, while MacFactory creates the corresponding Mac products. The major benefit is switching product families without changing client creation logic."
+          ],
+          "bullets": [
+            "Can identify abstract factory, concrete factory, and product interfaces.",
+            "Can explain why products belong to a family.",
+            "Can explain how the client remains independent of concrete classes.",
+            "Can compare Abstract Factory with Factory Method.",
+            "Can explain the trade-off when adding a new product type."
+          ],
+          "note": "Start with the related-product-family problem, explain the factory hierarchy, show one concrete family, and finish with the extensibility trade-off."
+        }
+      ],
+      "complexityTable": {
+        "title": "Creation and design complexity",
+        "headers": [
+          "Operation",
+          "Typical cost",
+          "Why / condition"
+        ],
+        "rows": [
+          [
+            "Factory method call",
+            "O(1)",
+            "Normally creates or returns one product; constructor cost is separate."
+          ],
+          [
+            "Creating a product family",
+            "O(k)",
+            "k represents the number of products created."
+          ],
+          [
+            "Product lookup",
+            "O(1) typical",
+            "If factory selection uses a direct condition or map lookup."
+          ],
+          [
+            "Adding a product family",
+            "O(p)",
+            "Usually requires a new concrete factory implementing p product creation methods."
+          ],
+          [
+            "Adding a new product type",
+            "O(f)",
+            "All f concrete factories generally need a creation method for the new product."
+          ]
+        ]
+      },
+      "keyConcepts": [
+        "Abstract Factory creates families of related objects.",
+        "Client depends on abstractions rather than concrete product classes.",
+        "Concrete factories create compatible product families.",
+        "The pattern supports switching product families.",
+        "Adding a new family is relatively straightforward.",
+        "Adding a new product type usually requires changing every factory."
+      ],
+      "commonMistakes": [
+        "Creating concrete products directly inside client code.",
+        "Mixing products from different families.",
+        "Confusing Abstract Factory with Factory Method.",
+        "Adding unrelated products to the same factory.",
+        "Ignoring the cost of adding a new product type.",
+        "Returning concrete classes when the client only needs interfaces."
+      ],
+      "codeExample": "interface GUIFactory {\n    Button createButton();\n    Checkbox createCheckbox();\n}\n\nclass WindowsFactory implements GUIFactory {\n    public Button createButton() {\n        return new WindowsButton();\n    }\n\n    public Checkbox createCheckbox() {\n        return new WindowsCheckbox();\n    }\n}",
+      "debuggingScenario": [
+        "Wrong UI family appears: verify which concrete factory was selected.",
+        "Windows button is combined with Mac checkbox: ensure all products are created by the same concrete factory.",
+        "Client depends directly on WindowsButton: replace concrete construction with the product interface and factory.",
+        "New product type causes compilation errors across factories: update the abstract factory and every concrete factory implementation."
+      ],
+      "interviewChecklist": [
+        "Can explain Abstract Factory in one sentence.",
+        "Can identify all major participants.",
+        "Can explain product-family compatibility.",
+        "Can compare Abstract Factory and Factory Method.",
+        "Can explain the family-versus-product extensibility trade-off."
+      ],
+      "officialReferences": [
+        {
+          "title": "Java Interfaces",
+          "url": "https://docs.oracle.com/javase/tutorial/java/IandI/createinterface.html"
+        },
+        {
+          "title": "Java Polymorphism",
+          "url": "https://docs.oracle.com/javase/tutorial/java/IandI/polymorphism.html"
+        }
+      ]
+    }
   ]
 }

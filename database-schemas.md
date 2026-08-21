@@ -96,6 +96,26 @@ CREATE TABLE IF NOT EXISTS practice_question_progress (
     UNIQUE (candidate_id, section, topic_id, question_no)
 );
 
+CREATE TABLE IF NOT EXISTS learning_overview (
+    id BIGSERIAL PRIMARY KEY,
+    language VARCHAR(50) NOT NULL,
+    round_no SMALLINT NOT NULL CHECK (round_no IN (1, 2)),
+    screen VARCHAR(100) NOT NULL,
+    topic VARCHAR(255) NOT NULL,
+    subtopic VARCHAR(255) NOT NULL,
+    question_no INTEGER NULL,
+    UNIQUE (
+        language,
+        round_no,
+        screen,
+        topic,
+        subtopic,
+        question_no
+    )
+);
+
+
+
 CREATE UNIQUE INDEX IF NOT EXISTS uq_evaluations_question_id
     ON evaluations (question_id);
 
@@ -106,7 +126,106 @@ CREATE INDEX IF NOT EXISTS idx_practice_progress_candidate
     ON practice_question_progress (candidate_id);
 ```
 # Notes
-Create a table called as learning_content_overview , and make sure all the content in json needs to be transferred here.
+Create a table called as learning_content_overview , and make sure all the content in json needs to be transferred here like below.
+
+The table should hold data's Concept and Practice Question Screen from Round 1
+and 
+Format and Practice Question Screen from Round 2
+
+```sql
+INSERT INTO learning_overview
+    (language, round_no, screen, topic, subtopic, question_no)
+VALUES
+    ('Java', 1, 'Concepts', 'Collections', 'collections-foundations', NULL),
+    ('Java', 1, 'Concepts', 'Collections', 'list', NULL),
+    ('Java', 1, 'Concepts', 'Collections', 'set', NULL),
+    ('Java', 1, 'Concepts', 'Collections', 'map', NULL),
+    ('Java', 1, 'Concepts', 'Collections', 'hashmap', NULL),
+    ('Java', 1, 'Concepts', 'Collections', 'linkedhashmap', NULL),
+    ('Java', 1, 'Concepts', 'Collections', 'queue-deque', NULL),
+    ('Java', 1, 'Concepts', 'Collections', 'sorting-comparison', NULL),
+    ('Java', 1, 'Concepts', 'Collections', 'iterators', NULL),
+    ('Java', 1, 'Concepts', 'Collections', 'specialized-collections', NULL),
+
+    ('Java', 1, 'Concepts', 'Exception Handling', 'exception-handling', NULL),
+    ('Java', 1, 'Concepts', 'Exception Handling', 'exception-control-flow', NULL),
+    ('Java', 1, 'Concepts', 'Exception Handling', 'custom-exceptions', NULL),
+    ('Java', 1, 'Concepts', 'Exception Handling', 'try-with-resources', NULL),
+    ('Java', 1, 'Concepts', 'Exception Handling', 'production-exception-design', NULL),
+
+    ('Java', 1, 'Concepts', 'Multithreading', 'thread-basics', NULL),
+    ('Java', 1, 'Concepts', 'Multithreading', 'memory-model', NULL),
+    ('Java', 1, 'Concepts', 'Multithreading', 'race-condition', NULL),
+    ('Java', 1, 'Concepts', 'Multithreading', 'volatile', NULL),
+    ('Java', 1, 'Concepts', 'Multithreading', 'locks-atomics', NULL),
+    ('Java', 1, 'Concepts', 'Multithreading', 'deadlock', NULL),
+    ('Java', 1, 'Concepts', 'Multithreading', 'producer-consumer', NULL),
+    ('Java', 1, 'Concepts', 'Multithreading', 'concurrent-collections', NULL),
+    ('Java', 1, 'Concepts', 'Multithreading', 'executors-futures', NULL),
+    ('Java', 1, 'Concepts', 'Multithreading', 'interruption-cancellation', NULL);
+
+INSERT INTO learning_overview
+    (language, round_no, screen, topic, subtopic, question_no)
+SELECT
+    'Java',
+    1,
+    'Practice Question',
+    question_groups.topic,
+    question_groups.subtopic,
+    question_numbers.question_no
+FROM (
+    VALUES
+        ('equalsAndHashCode', 'equals', 6),
+        ('equalsAndHashCode', 'hashcode', 6),
+        ('equalsAndHashCode', 'comparator', 8),
+
+        ('collections', 'list', 9),
+        ('collections', 'set', 8),
+        ('collections', 'map', 9),
+        ('collections', 'hashmap', 7),
+        ('collections', 'linkedhashmap', 6),
+        ('collections', 'concurrent-iteration', 6),
+        ('collections', 'collections-framework', 4),
+        ('collections', 'queue-deque', 4),
+        ('collections', 'specialized-collections', 4),
+
+        ('exceptions', 'exception', 10),
+        ('exceptions', 'customException', 8),
+        ('exceptions', 'tryWithResources', 8),
+        ('exceptions', 'exception-control-flow', 8),
+        ('exceptions', 'production-exception-design', 6),
+
+        ('multithreading', 'thread-basics', 6),
+        ('multithreading', 'race-condition', 6),
+        ('multithreading', 'volatile', 6),
+        ('multithreading', 'deadlock', 6),
+        ('multithreading', 'producer-consumer', 6),
+        ('multithreading', 'concurrent-collections', 6),
+        ('multithreading', 'memory-model', 6),
+        ('multithreading', 'locks-atomics', 6),
+        ('multithreading', 'executors-futures', 6),
+        ('multithreading', 'interruption-cancellation', 6)
+) AS question_groups(topic, subtopic, question_count)
+CROSS JOIN LATERAL generate_series(
+    1,
+    question_groups.question_count
+) AS question_numbers(question_no);
+
+INSERT INTO learning_overview
+    (language, round_no, screen, topic, subtopic, question_no)
+VALUES
+    ('Node', 1, 'Concepts', 'Node.js', 'nodejs-fundamentals', NULL),
+    ('Node', 1, 'Concepts', 'Node.js', 'nodejs-modules-npm', NULL),
+    ('Node', 1, 'Concepts', 'Node.js', 'nodejs-async-programming', NULL);
+
+INSERT INTO learning_overview
+    (language, round_no, screen, topic, subtopic, question_no)
+VALUES
+    ('Node', 1, 'Practice Question', 'Node.js Fundamentals', 'event-loop-and-async', 1),
+    ('Node', 1, 'Practice Question', 'Node.js Fundamentals', 'event-loop-and-async', 2),
+    ('Node', 1, 'Practice Question', 'Node.js Fundamentals', 'event-loop-and-async', 3);
+```
+
 
 ## Run the script
 
