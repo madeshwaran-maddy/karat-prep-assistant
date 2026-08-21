@@ -21,8 +21,8 @@ export default function RoundOneLearning() {
       }
 
       if (typeof window !== "undefined") {
-        localStorage.setItem("debuggingAssessmentId", data.assessmentId);
-        localStorage.setItem("debuggingAttemptNo", String(data.attemptNo));
+        localStorage.removeItem("debuggingAssessmentId");
+        localStorage.removeItem("debuggingAttemptNo");
       }
 
       router.push("/candidate-dashboard/round-1-learning/debugging-drill");

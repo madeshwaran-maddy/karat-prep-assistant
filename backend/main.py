@@ -1071,41 +1071,10 @@ def start_debugging_drill(request: Request):
 
             candidate_uuid = candidate[0]
 
-            next_attempt = connection.execute(
-                text(
-                    """
-                    SELECT COALESCE(MAX(attempt_no), 0) + 1
-                    FROM assessments
-                    WHERE candidate_id = :candidate_uuid AND round = 1
-                    """
-                ),
-                {"candidate_uuid": candidate_uuid},
-            ).scalar()
-
-            assessment_id = str(uuid.uuid4())
-
-            connection.execute(
-                text(
-                    """
-                    INSERT INTO assessments (id, candidate_id, attempt_no, round, status, created_at, updated_at)
-                    VALUES (:assessment_id, :candidate_uuid, :attempt_no, :round, :status, NOW(), NOW())
-                    """
-                ),
-                {
-                    "assessment_id": assessment_id,
-                    "candidate_uuid": candidate_uuid,
-                    "attempt_no": int(next_attempt),
-                    "round": 1,
-                    "status": "in_progress",
-                },
-            )
-
         return {
-            "assessmentId": assessment_id,
             "candidateId": str(candidate_uuid),
-            "attempt_no": int(next_attempt),
             "round": 1,
-            "status": "in_progress",
+            "status": "ready",
         }
 
     except HTTPException:

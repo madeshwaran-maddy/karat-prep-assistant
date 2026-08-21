@@ -4,12 +4,20 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ReviewerShell } from "../../components/ReviewerShell";
+import { TablePagination, TABLE_PAGE_SIZE } from "../../components/TablePagination";
 import { Candidate, fetchCandidate } from "../../lib/reviewer-data";
 import styles from "../../reviewer-dashboard.module.css";
+
+const roundOrder = {
+  "Round 1": 1,
+  "Round 2": 2,
+  "Round 3": 3,
+} as const;
 
 export default function CandidateDetailedReportPage() {
   const params = useParams<{ candidateId: string }>();
   const [candidate, setCandidate] = useState<Candidate | null>(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     fetchCandidate(params.candidateId).then(setCandidate).catch(() => setCandidate(null));
@@ -18,6 +26,16 @@ export default function CandidateDetailedReportPage() {
   if (!candidate) {
     return <div className={styles.notFound}>Candidate not found.</div>;
   }
+
+  const orderedAttempts = [...candidate.attempts].sort(
+    (firstAttempt, secondAttempt) => roundOrder[firstAttempt.round] - roundOrder[secondAttempt.round]
+  );
+  const totalPages = Math.max(1, Math.ceil(orderedAttempts.length / TABLE_PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedAttempts = orderedAttempts.slice(
+    (currentPage - 1) * TABLE_PAGE_SIZE,
+    currentPage * TABLE_PAGE_SIZE
+  );
 
   return (
     <ReviewerShell active="report">
@@ -62,7 +80,7 @@ export default function CandidateDetailedReportPage() {
             </thead>
 
             <tbody>
-              {candidate.attempts.map((attempt) => (
+              {paginatedAttempts.map((attempt) => (
                 <tr key={attempt.id}>
                   <td>{attempt.round === "Round 3" ? "Mock" : attempt.round}</td>
                   <td>{attempt.attemptNo}</td>
@@ -80,6 +98,8 @@ export default function CandidateDetailedReportPage() {
             </tbody>
           </table>
         </div>
+
+        <TablePagination page={currentPage} totalItems={orderedAttempts.length} onPageChange={setPage} />
 
         <div className={styles.bottomRow}>
           <Link className={styles.primaryButton} href="../">

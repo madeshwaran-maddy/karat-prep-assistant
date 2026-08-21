@@ -16,6 +16,11 @@ class GenerateResponse(BaseModel):
         description="Persisted question id"
     )
 
+    assessmentId: str = Field(
+        ...,
+        description="Assessment id containing the generated question"
+    )
+
     topic: str = Field(
         ...,
         description="Java topic"

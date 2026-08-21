@@ -226,42 +226,6 @@ def generate_question(
         if not candidate:
             raise HTTPException(status_code=404, detail="Candidate not found.")
 
-        current_assessment = connection.execute(
-            text(
-                """
-                SELECT id
-                FROM assessments
-                WHERE candidate_id = :candidate_id
-                  AND status = 'in_progress'
-                  AND round = 1
-                ORDER BY created_at DESC
-                LIMIT 1
-                """
-            ),
-            {"candidate_id": candidate[0]},
-        ).fetchone()
-
-        if not current_assessment:
-            raise HTTPException(status_code=404, detail="No active debugging assessment found for this candidate.")
-
-        assessment_id = current_assessment[0]
-        next_question_no = connection.execute(
-            text(
-                """
-                SELECT COALESCE(MAX(question_no), 0) + 1
-                FROM questions
-                WHERE assessment_id = :assessment_id
-                """
-            ),
-            {"assessment_id": assessment_id},
-        ).scalar()
-
-    print(
-        f"[debugging-generate] assessment ready assessment_id={assessment_id} "
-        f"question_no={next_question_no}",
-        flush=True,
-    )
-
     prompt = prompt_service.build_generation_prompt(
         drill,
         request.language,
@@ -298,6 +262,63 @@ def generate_question(
     question_id = str(uuid.uuid4())
 
     with engine.begin() as connection:
+        if request.assessmentId:
+            assessment = connection.execute(
+                text(
+                    """
+                    SELECT id
+                    FROM assessments
+                    WHERE id = :assessment_id
+                      AND candidate_id = :candidate_id
+                      AND status = 'in_progress'
+                      AND round = 1
+                    """
+                ),
+                {
+                    "assessment_id": request.assessmentId,
+                    "candidate_id": candidate[0],
+                },
+            ).fetchone()
+            if not assessment:
+                raise HTTPException(status_code=404, detail="Debugging assessment not found.")
+            assessment_id = str(assessment[0])
+        else:
+            assessment_id = str(uuid.uuid4())
+            next_attempt = connection.execute(
+                text(
+                    """
+                    SELECT COALESCE(MAX(attempt_no), 0) + 1
+                    FROM assessments
+                    WHERE candidate_id = :candidate_id AND round = 1
+                    """
+                ),
+                {"candidate_id": candidate[0]},
+            ).scalar()
+            connection.execute(
+                text(
+                    """
+                    INSERT INTO assessments (id, candidate_id, attempt_no, round, status, created_at, updated_at)
+                    VALUES (:assessment_id, :candidate_id, :attempt_no, 1, 'in_progress', NOW(), NOW())
+                    """
+                ),
+                {
+                    "assessment_id": assessment_id,
+                    "candidate_id": candidate[0],
+                    "attempt_no": int(next_attempt),
+                },
+            )
+
+        next_question_no = connection.execute(
+            text(
+                """
+                SELECT COALESCE(MAX(question_no), 0) + 1
+                FROM questions
+                WHERE assessment_id = :assessment_id
+                """
+            ),
+            {"assessment_id": assessment_id},
+        ).scalar()
+
         connection.execute(
             text(
                 """
@@ -352,6 +373,7 @@ def generate_question(
 
     return GenerateResponse(
         id=question_id,
+        assessmentId=assessment_id,
         topic=topic,
         difficulty=difficulty,
         code=generated_code,

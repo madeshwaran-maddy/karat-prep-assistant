@@ -23,10 +23,12 @@ export interface DrillJson {
 export interface GenerateRequest {
   id: string;
   language?: string;
+  assessmentId?: string;
 }
 
 export interface GenerateResponse {
   id?: string;
+  assessmentId: string;
   topic: string;
   difficulty: string;
   code: string;

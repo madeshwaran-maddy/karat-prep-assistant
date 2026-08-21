@@ -11,7 +11,7 @@ const API_BASE = apiUrl("/api/concept-learning");
 export function useConceptProgress() {
   const [progress, setProgress] = useState<Record<string, ConceptProgress>>({});
   const [summary, setSummary] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch all progress

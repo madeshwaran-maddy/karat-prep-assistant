@@ -16,6 +16,11 @@ class GenerateRequest(BaseModel):
         description="Content language identifier",
     )
 
+    assessmentId: str | None = Field(
+        default=None,
+        description="Assessment id for the current debugging drill session",
+    )
+
 
 class EvaluateRequest(BaseModel):
     """

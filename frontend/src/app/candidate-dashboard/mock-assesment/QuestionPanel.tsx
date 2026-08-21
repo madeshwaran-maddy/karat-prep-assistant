@@ -12,6 +12,9 @@ interface Props {
   question: AssessmentQuestion;
   onNext: () => void;
   hasNext: boolean;
+  nextEnabled: boolean;
+  questionSubmitted: boolean;
+  onSubmitted: (questionKey: string) => void;
 }
 
 export default function QuestionPanel({
@@ -19,6 +22,9 @@ export default function QuestionPanel({
   question,
   onNext,
   hasNext,
+  nextEnabled,
+  questionSubmitted,
+  onSubmitted,
 }: Props) {
   const [code, setCode] = useState(question.code);
   const [submitting, setSubmitting] = useState(false);
@@ -30,9 +36,6 @@ export default function QuestionPanel({
   const [secondsRemaining, setSecondsRemaining] = useState(
     question.round === 1 ? 4 * 60 : 30 * 60
   );
-  const [submittedQuestionKeys, setSubmittedQuestionKeys] = useState<Set<string>>(
-    new Set()
-  );
   const codeRef = useRef(code);
   const timerRef = useRef<number | null>(null);
   const submitRef = useRef<((automatic?: boolean) => Promise<void>) | null>(null);
@@ -41,7 +44,6 @@ export default function QuestionPanel({
   const { language } = useCandidateLanguage();
 
   const questionKey = `${question.round}-${question.questionNo}`;
-  const questionSubmitted = submittedQuestionKeys.has(questionKey);
   const timeLimit = question.round === 1 ? 4 * 60 : 30 * 60;
 
   useEffect(() => {
@@ -92,13 +94,13 @@ export default function QuestionPanel({
       !autoSubmitAttemptedRef.current
     ) {
       autoSubmitAttemptedRef.current = true;
-      void submitRef.current?.(true);
+      void submitRef.current?.();
     }
   }, [questionSubmitted, secondsRemaining]);
 
   const isRound1 = question.round === 1;
 
-  async function handleSubmit(automatic = false) {
+  async function handleSubmit() {
     if (
       questionSubmitted ||
       submitting ||
@@ -107,7 +109,7 @@ export default function QuestionPanel({
       return;
     }
 
-    if (!automatic && timerRef.current !== null) {
+    if (timerRef.current !== null) {
       window.clearInterval(timerRef.current);
       timerRef.current = null;
     }
@@ -127,22 +129,8 @@ export default function QuestionPanel({
       );
 
       if (response?.submitted) {
-        setSubmittedQuestionKeys((current) => {
-          const next = new Set(current);
-          next.add(questionKey);
-          return next;
-        });
-
-        if (!hasNext) {
-          window.location.href = "/candidate-dashboard";
-          return;
-        }
-
-        setSuccessMessage(
-          automatic
-            ? "Time expired. Your answer was submitted."
-            : "Code saved successfully."
-        );
+        onSubmitted(questionKey);
+        setSuccessMessage("Question Submitted Successfully");
       }
     } catch (err) {
       submittingQuestionRef.current = null;
@@ -291,11 +279,23 @@ export default function QuestionPanel({
       <div className="mt-6 flex justify-end gap-3">
         <button
           type="button"
-          onClick={handleSubmit}
-          disabled={submitting || questionSubmitted}
+          onClick={
+            isRound1 || !questionSubmitted
+              ? handleSubmit
+              : () => {
+                  window.location.href = "/candidate-dashboard";
+                }
+          }
+          disabled={submitting}
           className="rounded-lg bg-blue-600 px-7 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {submitting ? "Submitting..." : questionSubmitted ? "Submitted" : "Submit"}
+          {submitting
+            ? "Submitting..."
+            : isRound1 || !questionSubmitted
+              ? questionSubmitted
+                ? "Submitted"
+                : "Submit"
+              : "Back to Candidate Dashboard"}
         </button>
 
         {!hasNext && (
@@ -313,7 +313,7 @@ export default function QuestionPanel({
           <button
             type="button"
             onClick={onNext}
-            disabled={!hasNext}
+            disabled={!nextEnabled}
             className="rounded-lg bg-green-600 px-7 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
             Next

@@ -3,37 +3,40 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ReviewerShell } from "../components/ReviewerShell";
+import { TablePagination, TABLE_PAGE_SIZE } from "../components/TablePagination";
 import { Candidate, fetchCandidates } from "../lib/reviewer-data";
 import styles from "../reviewer-dashboard.module.css";
 
 export default function CandidateReportPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [search, setSearch] = useState("");
-  const [selectedId, setSelectedId] = useState("");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     fetchCandidates().then(setCandidates).catch(() => setCandidates([]));
   }, []);
 
-  const suggestions = useMemo(() => {
+  const results = useMemo(() => {
     const value = search.trim().toLowerCase();
 
     if (value.length < 3) {
-      return [];
+      return candidates;
     }
 
     return candidates
-      .filter(
-        (candidate) =>
-          candidate.name.toLowerCase().includes(value) ||
-          candidate.email.toLowerCase().includes(value)
-      )
-      .slice(0, 6);
+      .filter((candidate) =>
+        Object.values(candidate).some((candidateValue) =>
+          (typeof candidateValue === "string" || typeof candidateValue === "number") &&
+          String(candidateValue).toLowerCase().includes(value)
+        )
+      );
   }, [candidates, search]);
-
-  const results = selectedId
-    ? candidates.filter((candidate) => candidate.id === selectedId)
-    : candidates;
+  const totalPages = Math.max(1, Math.ceil(results.length / TABLE_PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedResults = results.slice(
+    (currentPage - 1) * TABLE_PAGE_SIZE,
+    currentPage * TABLE_PAGE_SIZE
+  );
 
   return (
     <ReviewerShell active="report">
@@ -53,41 +56,12 @@ export default function CandidateReportPage() {
               value={search}
               onChange={(event) => {
                 setSearch(event.target.value);
-                setSelectedId("");
+                setPage(1);
               }}
               placeholder="Type at least 3 letters"
             />
-
-            {suggestions.length > 0 && (
-              <div className={styles.suggestions}>
-                {suggestions.map((candidate) => (
-                  <button
-                    key={candidate.id}
-                    onClick={() => {
-                      setSelectedId(candidate.id);
-                      setSearch(candidate.name);
-                    }}
-                  >
-                    {candidate.name}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
-
-          <button
-            className={styles.primaryButton}
-            onClick={() => {
-              if (suggestions[0]) {
-                setSelectedId(suggestions[0].id);
-                setSearch(suggestions[0].name);
-              }
-            }}
-          >
-            Search
-          </button>
-
-          <span className={styles.hint}>Dropdown after 3 letters</span>
+          <span className={styles.hint}>Searches all columns after 3 characters</span>
         </div>
       </section>
 
@@ -112,7 +86,7 @@ export default function CandidateReportPage() {
             </thead>
 
             <tbody>
-              {results.map((candidate) => (
+              {paginatedResults.map((candidate) => (
                 <tr key={candidate.id}>
                   <td>{candidate.name}</td>
                   <td>{candidate.languageSelected || "Not assigned"}</td>
@@ -143,6 +117,8 @@ export default function CandidateReportPage() {
             </tbody>
           </table>
         </div>
+
+        <TablePagination page={currentPage} totalItems={results.length} onPageChange={setPage} />
 
         <div className={styles.infoNote}>
           Click &quot;View&quot; in any row to open the learning progress or assessment report screen.

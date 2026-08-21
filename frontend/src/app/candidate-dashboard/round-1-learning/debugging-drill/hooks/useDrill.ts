@@ -47,6 +47,7 @@ export function useDrill() {
   const topicQuestionCountsRef = useRef<Record<string, number>>({});
   const [questionProgress, setQuestionProgress] = useState({ topicId: "", count: 0 });
   const [submittedQuestionIds, setSubmittedQuestionIds] = useState<string[]>([]);
+  const [assessmentId, setAssessmentId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [secondsRemaining, setSecondsRemaining] = useState(4 * 60);
   const submitSolutionRef = useRef<((autoSubmit?: boolean) => Promise<void>) | null>(null);
@@ -94,8 +95,10 @@ export function useDrill() {
         const response: GenerateResponse = await generateQuestion({
           id: currentDrill.id,
           language: language.id,
+          assessmentId: assessmentId || undefined,
         });
 
+        setAssessmentId(response.assessmentId);
         setGeneratedQuestion(response);
         setEditorCode(response.code);
 
@@ -112,7 +115,7 @@ export function useDrill() {
         setLoading(false);
       }
     },
-    [selectedDrill, language.id, setLoading, setGeneratedQuestion, setEditorCode, setAnalysisText]
+    [selectedDrill, language.id, assessmentId, setLoading, setGeneratedQuestion, setEditorCode, setAnalysisText]
   );
 
   const initializeDrills = useCallback(async () => {
@@ -153,13 +156,17 @@ export function useDrill() {
       return;
     }
 
+    if (generatedQuestion && !hasSubmittedCurrentQuestion) {
+      return;
+    }
+
     const currentCount = topicQuestionCountsRef.current[selectedDrill.id] ?? 0;
     if (currentCount >= 3) {
       return;
     }
 
     await generate(selectedDrill);
-  }, [generate, selectedDrill]);
+  }, [generate, generatedQuestion, hasSubmittedCurrentQuestion, selectedDrill]);
 
   const updateCode = useCallback((code: string) => {
     setEditorCode(code);
@@ -187,7 +194,7 @@ export function useDrill() {
     }
 
     try {
-      if (!autoSubmit && timerRef.current !== null) {
+      if (timerRef.current !== null) {
         window.clearInterval(timerRef.current);
         timerRef.current = null;
       }
@@ -202,7 +209,7 @@ export function useDrill() {
         id: selectedDrill.id,
         language: language.id,
         questionId: generatedQuestion.id,
-        assessmentId: typeof window !== "undefined" ? localStorage.getItem("debuggingAssessmentId") || undefined : undefined,
+        assessmentId: assessmentId || undefined,
         userAnalysis: analysisText,
         userCode: editorCode,
         originalCode: generatedQuestion.code,
@@ -219,7 +226,7 @@ export function useDrill() {
     } finally {
       setEvaluating(false);
     }
-  }, [selectedDrill, generatedQuestion, analysisText, editorCode, setEvaluating, setEvaluation, openDrawer, submittedQuestionIds]);
+  }, [selectedDrill, generatedQuestion, assessmentId, analysisText, editorCode, setEvaluating, setEvaluation, openDrawer, submittedQuestionIds]);
 
   useEffect(() => {
     submitSolutionRef.current = submitSolution;

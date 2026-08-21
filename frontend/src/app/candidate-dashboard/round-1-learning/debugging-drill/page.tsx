@@ -33,6 +33,8 @@ export default function DebuggingDrillPage() {
     closeResult,
   } = useDrill();
 
+  const questionAwaitingSubmission = Boolean(generatedQuestion && !hasSubmittedCurrentQuestion);
+
   return (
 
     <div className="debug-page">
@@ -45,12 +47,14 @@ export default function DebuggingDrillPage() {
       </div>
 
       <div className="px-6 pt-6">
-        <Link
-          href="/candidate-dashboard/round-1-learning"
-          className="inline-flex rounded-full border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-100"
+        <button
+          type="button"
+          disabled={questionAwaitingSubmission}
+          onClick={() => window.location.assign("/candidate-dashboard/round-1-learning")}
+          className="inline-flex rounded-full border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Back to Round 1 Learning
-        </Link>
+        </button>
       </div>
 
       <DrillHeader
@@ -71,6 +75,7 @@ export default function DebuggingDrillPage() {
           <DrillSidebar
             selectedId={selectedDrill?.id}
             onSelect={selectDrill}
+            disabled={questionAwaitingSubmission}
           />
 
         </aside>
@@ -102,7 +107,7 @@ export default function DebuggingDrillPage() {
 
             <button
               className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={!generatedQuestion || questionProgress.count >= 3}
+              disabled={!generatedQuestion || questionAwaitingSubmission || questionProgress.count >= 3}
               onClick={nextQuestion}
             >
               {questionProgress.count >= 3 ? "Completed" : `Next Question${questionProgress.count > 0 ? ` (${questionProgress.count + 1}/3)` : ""}`}

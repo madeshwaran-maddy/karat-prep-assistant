@@ -8,12 +8,14 @@ import {
 interface Props {
   assessment: AssessmentData;
   selectedQuestion: AssessmentQuestion | null;
+  submittedQuestionKeys: Set<string>;
   onSelectQuestion: (question: AssessmentQuestion) => void;
 }
 
 export default function AssessmentSidebar({
   assessment,
   selectedQuestion,
+  submittedQuestionKeys,
   onSelectQuestion,
 }: Props) {
   return (
@@ -32,6 +34,8 @@ export default function AssessmentSidebar({
 
       <div className="space-y-2">
         {assessment.round1Questions.map((question) => {
+          const questionKey = `${question.round}-${question.questionNo}`;
+          const submitted = submittedQuestionKeys.has(questionKey);
           const active =
             selectedQuestion?.round === 1 &&
             selectedQuestion.questionNo === question.questionNo;
@@ -40,11 +44,18 @@ export default function AssessmentSidebar({
             <button
               key={`round1-${question.questionNo}`}
               type="button"
-              onClick={() => onSelectQuestion(question)}
+              onClick={() => {
+                if (submitted) {
+                  onSelectQuestion(question);
+                }
+              }}
+              disabled={!submitted}
               className={`w-full rounded-lg border p-2 text-left text-xs transition ${
                 active
                   ? "border-green-500 bg-green-50 text-green-700"
-                  : "border-slate-200 hover:bg-slate-50"
+                  : submitted
+                    ? "border-slate-200 hover:bg-slate-50"
+                    : "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400"
               }`}
             >
               <span className="font-semibold">
@@ -61,11 +72,23 @@ export default function AssessmentSidebar({
 
       <button
         type="button"
-        onClick={() => onSelectQuestion(assessment.round2Question)}
+        onClick={() => {
+          const question = assessment.round2Question;
+          if (submittedQuestionKeys.has(`${question.round}-${question.questionNo}`)) {
+            onSelectQuestion(question);
+          }
+        }}
+        disabled={!submittedQuestionKeys.has(
+          `${assessment.round2Question.round}-${assessment.round2Question.questionNo}`
+        )}
         className={`w-full rounded-lg border p-2 text-left text-[11px] transition ${
           selectedQuestion?.round === 2
             ? "border-green-500 bg-green-50 text-green-700"
-            : "border-slate-200 hover:bg-slate-50"
+            : submittedQuestionKeys.has(
+                `${assessment.round2Question.round}-${assessment.round2Question.questionNo}`
+              )
+              ? "border-slate-200 hover:bg-slate-50"
+              : "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400"
         }`}
       >
         <span className="font-semibold">

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { ReviewerShell } from "../../../../components/ReviewerShell";
+import { TablePagination, TABLE_PAGE_SIZE } from "../../../../components/TablePagination";
 import {
   Attempt,
   AttemptQuestion,
@@ -26,11 +27,28 @@ function buildQuestionFromAttempt(attempt: Attempt): AttemptQuestion | null {
     subtopic: "General",
     questionCode: attempt.solution || "",
     userCode: attempt.solution || "",
-    userAnalysis: "Not available for this submission.",
+    userAnalysis: "",
     score: "N/A",
-    explanation: "No detailed explanation is available for this legacy submission.",
-    suggestions: ["Review the candidate solution directly in the code window."],
+    explanation: "",
+    suggestions: [],
   };
+}
+
+function hasText(value: string | null | undefined) {
+  return Boolean(value?.trim());
+}
+
+function getNumericScore(score: AttemptQuestion["score"]) {
+  if (typeof score === "number") {
+    return Number.isFinite(score) ? score : null;
+  }
+
+  if (typeof score !== "string" || !score.trim()) {
+    return null;
+  }
+
+  const numericScore = Number(score);
+  return Number.isFinite(numericScore) ? numericScore : null;
 }
 
 export default function ViewSolutionPage() {
@@ -68,12 +86,25 @@ export default function ViewSolutionPage() {
   }, [attempt]);
 
   const [selectedQuestion, setSelectedQuestion] = useState<AttemptQuestion | null>(null);
+  const [page, setPage] = useState(1);
 
   if (!candidate || !attempt) {
     return <div className={styles.notFound}>Solution not found.</div>;
   }
 
   const activeQuestion = selectedQuestion;
+  const scores = questions
+    .map((question) => getNumericScore(question.score))
+    .filter((score): score is number => score !== null);
+  const averageScore = scores.length > 0
+    ? scores.reduce((total, score) => total + score, 0) / scores.length
+    : null;
+  const totalPages = Math.max(1, Math.ceil(questions.length / TABLE_PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedQuestions = questions.slice(
+    (currentPage - 1) * TABLE_PAGE_SIZE,
+    currentPage * TABLE_PAGE_SIZE
+  );
 
   return (
     <ReviewerShell active="report">
@@ -101,6 +132,12 @@ export default function ViewSolutionPage() {
           <span>Attempted Date</span>
           <strong>{attempt.attemptedDate}</strong>
         </div>
+        {attempt.round === "Round 1" && (
+          <div>
+            <span>Average Score</span>
+            <strong>{averageScore === null ? "N/A" : averageScore.toFixed(2)}</strong>
+          </div>
+        )}
       </section>
 
       <section className={styles.panel}>
@@ -117,7 +154,7 @@ export default function ViewSolutionPage() {
               </tr>
             </thead>
             <tbody>
-              {questions.map((question) => (
+              {paginatedQuestions.map((question) => (
                 <tr key={question.id || `${attempt.id}-question-${question.questionNo}`}>
                   <td>{question.questionNo}</td>
                   <td>{question.topic || "N/A"}</td>
@@ -136,6 +173,8 @@ export default function ViewSolutionPage() {
             </tbody>
           </table>
         </div>
+
+        <TablePagination page={currentPage} totalItems={questions.length} onPageChange={setPage} />
       </section>
 
       {activeQuestion && (
@@ -162,57 +201,53 @@ export default function ViewSolutionPage() {
             </div>
 
             <div className={styles.modalMetaGrid}>
-              <div>
+              {hasText(activeQuestion.topic) && <div>
                 <span>Topic</span>
-                <strong>{activeQuestion.topic || "N/A"}</strong>
-              </div>
-              <div>
+                <strong>{activeQuestion.topic}</strong>
+              </div>}
+              {hasText(activeQuestion.subtopic) && <div>
                 <span>Subtopic</span>
-                <strong>{activeQuestion.subtopic || "General"}</strong>
-              </div>
-              <div>
+                <strong>{activeQuestion.subtopic}</strong>
+              </div>}
+              {activeQuestion.score !== null && activeQuestion.score !== undefined && <div>
                 <span>Score</span>
-                <strong>{String(activeQuestion.score ?? "N/A")}</strong>
-              </div>
+                <strong>{String(activeQuestion.score)}</strong>
+              </div>}
             </div>
 
             <div className={styles.modalContentGrid}>
-              <section className={styles.detailCard}>
+              {hasText(activeQuestion.questionCode) && <section className={styles.detailCard}>
                 <h4>Question Code</h4>
                 <pre>
-                  <code>{activeQuestion.questionCode || "No question code available."}</code>
+                  <code>{activeQuestion.questionCode}</code>
                 </pre>
-              </section>
+              </section>}
 
-              <section className={styles.detailCard}>
+              {hasText(activeQuestion.userCode) && <section className={styles.detailCard}>
                 <h4>User Code</h4>
                 <pre>
-                  <code>{activeQuestion.userCode || "No user code submitted."}</code>
+                  <code>{activeQuestion.userCode}</code>
                 </pre>
-              </section>
+              </section>}
 
-              <section className={styles.detailCard}>
-                <h4>User Analysis</h4>
-                <p>{activeQuestion.userAnalysis || "No user analysis recorded."}</p>
-              </section>
+              {hasText(activeQuestion.userAnalysis) && <section className={styles.detailCard}>
+                <h4>{attempt.round === "Round 1" ? "User Analysis" : "User Console Output"}</h4>
+                <p>{activeQuestion.userAnalysis}</p>
+              </section>}
 
-              <section className={styles.detailCard}>
+              {hasText(activeQuestion.explanation) && <section className={styles.detailCard}>
                 <h4>Explanation</h4>
-                <p>{activeQuestion.explanation || "No explanation provided."}</p>
-              </section>
+                <p>{activeQuestion.explanation}</p>
+              </section>}
 
-              <section className={styles.detailCard}>
+              {activeQuestion.suggestions?.some(hasText) && <section className={styles.detailCard}>
                 <h4>Suggestions</h4>
-                {activeQuestion.suggestions && activeQuestion.suggestions.length > 0 ? (
-                  <ul>
-                    {activeQuestion.suggestions.map((suggestion, index) => (
-                      <li key={`${activeQuestion.id}-suggestion-${index}`}>{suggestion}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>No suggestions available.</p>
-                )}
-              </section>
+                <ul>
+                  {activeQuestion.suggestions.filter(hasText).map((suggestion, index) => (
+                    <li key={`${activeQuestion.id}-suggestion-${index}`}>{suggestion}</li>
+                  ))}
+                </ul>
+              </section>}
             </div>
           </div>
         </div>

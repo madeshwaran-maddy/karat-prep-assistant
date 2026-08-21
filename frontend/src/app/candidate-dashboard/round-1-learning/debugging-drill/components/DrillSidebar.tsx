@@ -8,11 +8,13 @@ import { useCandidateLanguage } from "../../../../../components/CandidateLanguag
 interface DrillSidebarProps {
   selectedId?: string;
   onSelect?: (drill: Drill) => void;
+  disabled?: boolean;
 }
 
 export default function DrillSidebar({
   selectedId,
   onSelect,
+  disabled = false,
 }: DrillSidebarProps) {
   const { language } = useCandidateLanguage();
   const [collections, setCollections] = useState<Record<string, Drill[]>>({});
@@ -62,8 +64,9 @@ export default function DrillSidebar({
                 return (
                   <button
                     key={drill.id}
+                    disabled={disabled}
                     onClick={() => onSelect?.(drill)}
-                    className={`w-full rounded-lg border px-3 py-3 text-left transition ${
+                    className={`w-full rounded-lg border px-3 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
                       isActive
                         ? "border-green-500 bg-green-50 text-green-700"
                         : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"

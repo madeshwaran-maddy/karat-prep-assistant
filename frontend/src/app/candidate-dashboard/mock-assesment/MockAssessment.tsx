@@ -24,6 +24,9 @@ export default function MockAssessment() {
   const [error, setError] = useState("");
   const [interviewerName, setInterviewerName] = useState("");
   const [nameSubmitted, setNameSubmitted] = useState(false);
+  const [submittedQuestionKeys, setSubmittedQuestionKeys] = useState<Set<string>>(
+    new Set()
+  );
   const { language, loading: languageLoading } = useCandidateLanguage();
 
   useEffect(() => {
@@ -33,6 +36,7 @@ export default function MockAssessment() {
 
     setAssessment(null);
     setSelectedQuestion(null);
+    setSubmittedQuestionKeys(new Set());
     setError("");
     setLoading(true);
 
@@ -113,7 +117,7 @@ export default function MockAssessment() {
   }
 
   function handleNext() {
-    if (!selectedQuestion) {
+    if (!selectedQuestion || !currentQuestionSubmitted) {
       return;
     }
 
@@ -162,6 +166,8 @@ export default function MockAssessment() {
 
   const hasNext = selectedIndex >= 0 &&
     selectedIndex < questions.length - 1;
+  const currentQuestionKey = `${selectedQuestion.round}-${selectedQuestion.questionNo}`;
+  const currentQuestionSubmitted = submittedQuestionKeys.has(currentQuestionKey);
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -182,6 +188,7 @@ export default function MockAssessment() {
             <AssessmentSidebar
               assessment={assessment}
               selectedQuestion={selectedQuestion}
+              submittedQuestionKeys={submittedQuestionKeys}
               onSelectQuestion={setSelectedQuestion}
             />
           </div>
@@ -192,6 +199,15 @@ export default function MockAssessment() {
               question={selectedQuestion}
               onNext={handleNext}
               hasNext={hasNext}
+              nextEnabled={currentQuestionSubmitted}
+              questionSubmitted={currentQuestionSubmitted}
+              onSubmitted={(questionKey) => {
+                setSubmittedQuestionKeys((current) => {
+                  const next = new Set(current);
+                  next.add(questionKey);
+                  return next;
+                });
+              }}
             />
           </div>
         </div>
