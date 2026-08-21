@@ -4700,6 +4700,506 @@
           ]
         }
       ]
-    }
+    },
+    {
+    "id": "overall-multithreading",
+    "title": "Multithreading, Concurrency & Synchronization",
+    "summary": "Practice thread lifecycle, race conditions, synchronization, visibility, atomicity, locks, wait/notify, volatile, and concurrent utilities.",
+    "learningGoals": [
+      "Distinguish concurrency from parallelism and identify race conditions.",
+      "Understand synchronized instance, static, and block-level locking.",
+      "Use volatile for visibility but not for compound atomic operations.",
+      "Use atomic classes and locks when multiple threads update shared state.",
+      "Apply wait/notify correctly with guarded predicates.",
+      "Recognize deadlock and enforce a consistent lock-ordering policy."
+    ],
+    "questions": [
+      {
+        "questionNo": 1,
+        "title": "Race condition on a shared counter",
+        "difficulty": "Easy",
+        "task": "Predict whether the final count is guaranteed to be 200000 and explain the smallest safe correction.",
+        "expectedBehavior": "The final count must be deterministic and account for every increment.",
+        "buggyCode": "class Counter {\n    int count = 0;\n\n    void increment() {\n        count++;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) throws Exception {\n        Counter c = new Counter();\n\n        Thread t1 = new Thread(() -> {\n            for (int i = 0; i < 100000; i++) c.increment();\n        });\n\n        Thread t2 = new Thread(() -> {\n            for (int i = 0; i < 100000; i++) c.increment();\n        });\n\n        t1.start();\n        t2.start();\n        t1.join();\n        t2.join();\n\n        System.out.println(c.count);\n    }\n}",
+        "answer": "The final count is not guaranteed to be 200000 because count++ is a non-atomic read-modify-write operation.",
+        "explanation": "Both threads can read the same old value and then write the same new value, causing lost updates. Protect the increment with synchronized or use AtomicInteger.",
+        "hints": [
+          "Break count++ into read, add, and write steps.",
+          "Consider what happens if both threads read the same value.",
+          "Ask whether the entire operation is atomic."
+        ],
+        "correctedCode": "synchronized void increment() {\n    count++;\n}",
+        "keyTakeaways": [
+          "count++ is not atomic.",
+          "Concurrent access to mutable shared state needs coordination.",
+          "AtomicInteger is another good solution for a single counter."
+        ],
+        "followUpQuestions": [
+          "Would volatile int count fix count++?",
+          "How would AtomicInteger.incrementAndGet() solve it?",
+          "What changes if there are four threads?"
+        ]
+      },
+      {
+        "questionNo": 2,
+        "title": "synchronized instance methods use different locks",
+        "difficulty": "Medium",
+        "task": "Determine why synchronization fails when two different objects update the same static variable.",
+        "expectedBehavior": "Every update to the shared static state must use the same synchronization mechanism.",
+        "buggyCode": "class Worker implements Runnable {\n    static int count = 0;\n\n    public synchronized void run() {\n        for (int i = 0; i < 100000; i++) {\n            count++;\n        }\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) throws Exception {\n        Thread t1 = new Thread(new Worker());\n        Thread t2 = new Thread(new Worker());\n\n        t1.start();\n        t2.start();\n\n        t1.join();\n        t2.join();\n\n        System.out.println(Worker.count);\n    }\n}",
+        "answer": "The result is not guaranteed because each synchronized run() locks a different Worker instance.",
+        "explanation": "An instance synchronized method locks this. Since t1 and t2 use different Worker objects, they acquire different monitors while modifying the same static count. Use a static synchronized method, a common lock, or AtomicInteger.",
+        "hints": [
+          "What object does an instance synchronized method lock?",
+          "Are the two Worker objects the same?",
+          "Where is count stored?"
+        ],
+        "correctedCode": "static synchronized void incrementAll() {\n    count++;\n}",
+        "keyTakeaways": [
+          "Instance synchronized methods lock this.",
+          "Static shared state needs a common lock.",
+          "Lock identity must match shared-state ownership."
+        ],
+        "followUpQuestions": [
+          "What does a static synchronized method lock?",
+          "Can synchronized(lock) solve this?",
+          "When would AtomicInteger be preferable?"
+        ]
+      },
+      {
+        "questionNo": 3,
+        "title": "Volatile does not make compound operations atomic",
+        "difficulty": "Medium",
+        "task": "Explain why volatile does not make the increment operation thread-safe.",
+        "expectedBehavior": "The explanation must distinguish visibility from atomicity.",
+        "buggyCode": "class Counter {\n    volatile int count;\n\n    void increment() {\n        count++;\n    }\n}",
+        "answer": "volatile provides visibility guarantees but does not make count++ atomic.",
+        "explanation": "A volatile read and volatile write are individually visible, but count++ still consists of a read followed by a write. Two threads can interleave those operations and lose an update.",
+        "hints": [
+          "What does volatile guarantee?",
+          "Is read-modify-write one operation?",
+          "Consider two threads reading the same value."
+        ],
+        "correctedCode": "private final AtomicInteger count = new AtomicInteger();\n\nvoid increment() {\n    count.incrementAndGet();\n}",
+        "keyTakeaways": [
+          "volatile is mainly about visibility and ordering.",
+          "volatile does not make read-modify-write atomic.",
+          "Use AtomicInteger or synchronization for atomic increments."
+        ],
+        "followUpQuestions": [
+          "When is volatile appropriate?",
+          "Would volatile work for a boolean stop flag?",
+          "What is the difference between volatile and synchronized?"
+        ]
+      },
+      {
+        "questionNo": 4,
+        "title": "Deadlock caused by inconsistent lock ordering",
+        "difficulty": "Hard",
+        "task": "Identify the deadlock possibility and establish a consistent lock order.",
+        "expectedBehavior": "Both transfers must be able to complete without circular waiting.",
+        "buggyCode": "class Account {\n    final int id;\n    int balance;\n\n    Account(int id, int balance) {\n        this.id = id;\n        this.balance = balance;\n    }\n}\n\nstatic void transfer(Account from, Account to, int amount) {\n    synchronized (from) {\n        synchronized (to) {\n            from.balance -= amount;\n            to.balance += amount;\n        }\n    }\n}",
+        "answer": "Opposite transfers can deadlock because one thread may lock A then wait for B while another locks B then waits for A.",
+        "explanation": "The locking order depends on the transfer direction. If every operation acquires the two account locks in a stable order, circular wait is avoided.",
+        "hints": [
+          "Imagine transfer(A, B) and transfer(B, A) running together.",
+          "Write down the lock order for each thread.",
+          "Look for circular wait."
+        ],
+        "correctedCode": "Account first = from.id < to.id ? from : to;\nAccount second = from.id < to.id ? to : from;\n\nsynchronized (first) {\n    synchronized (second) {\n        from.balance -= amount;\n        to.balance += amount;\n    }\n}",
+        "keyTakeaways": [
+          "Deadlock can result from circular wait.",
+          "Consistent lock ordering is a common prevention technique.",
+          "Avoid unnecessary nested locks."
+        ],
+        "followUpQuestions": [
+          "What are the four Coffman conditions?",
+          "How would tryLock help?",
+          "How would a thread dump help diagnose deadlock?"
+        ]
+      },
+      {
+        "questionNo": 5,
+        "title": "wait must be called while holding the monitor",
+        "difficulty": "Medium",
+        "task": "Predict the exception and correct the wait/notify protocol.",
+        "expectedBehavior": "The consumer waits safely until the condition becomes true.",
+        "buggyCode": "class Buffer {\n    boolean ready = false;\n    final Object lock = new Object();\n\n    void consume() throws InterruptedException {\n        if (!ready) {\n            lock.wait();\n        }\n    }\n\n    void produce() {\n        synchronized (lock) {\n            ready = true;\n            lock.notifyAll();\n        }\n    }\n}",
+        "answer": "IllegalMonitorStateException is thrown because wait() is called without owning lock's monitor.",
+        "explanation": "A thread must own the monitor before calling Object.wait(), notify(), or notifyAll() on that object. The condition should also be checked in a while loop.",
+        "hints": [
+          "Which object owns the monitor?",
+          "Is consume synchronized on lock?",
+          "Why should a condition normally be checked in while?"
+        ],
+        "correctedCode": "void consume() throws InterruptedException {\n    synchronized (lock) {\n        while (!ready) {\n            lock.wait();\n        }\n    }\n}",
+        "keyTakeaways": [
+          "wait/notify require monitor ownership.",
+          "Use while, not if, around wait.",
+          "The state predicate and monitor must use the same synchronization protocol."
+        ],
+        "followUpQuestions": [
+          "Why can spurious wakeups happen?",
+          "What is the difference between wait() and sleep()?",
+          "Does sleep release the monitor?"
+        ]
+      },
+      {
+        "questionNo": 6,
+        "title": "notify before updating the guarded state",
+        "difficulty": "Hard",
+        "task": "Explain how a notification can be missed when the state is updated after notify, then fix the ordering.",
+        "expectedBehavior": "The producer must update the guarded state before signalling.",
+        "buggyCode": "class Signal {\n    final Object lock = new Object();\n    boolean ready;\n\n    void produce() {\n        synchronized (lock) {\n            lock.notifyAll();\n        }\n        ready = true;\n    }\n\n    void consume() throws InterruptedException {\n        synchronized (lock) {\n            while (!ready) {\n                lock.wait();\n            }\n        }\n    }\n}",
+        "answer": "The notification happens before ready becomes true, so a consumer can wake, observe false, wait again, and never receive another notification.",
+        "explanation": "The state transition and notification must occur while holding the same monitor. The normal pattern is acquire lock, update state, signal, then release the lock.",
+        "hints": [
+          "What predicate does consume check?",
+          "When is ready changed?",
+          "Can the consumer reacquire the lock before ready=true?"
+        ],
+        "correctedCode": "void produce() {\n    synchronized (lock) {\n        ready = true;\n        lock.notifyAll();\n    }\n}",
+        "keyTakeaways": [
+          "Notification is not the state itself.",
+          "Update the guarded state before signalling.",
+          "Waiters must always recheck the predicate."
+        ],
+        "followUpQuestions": [
+          "Why is notifyAll often safer than notify?",
+          "How could CountDownLatch model one-time readiness?",
+          "How would BlockingQueue simplify producer-consumer coordination?"
+        ]
+      },
+      {
+        "questionNo": 7,
+        "title": "Thread.sleep does not release a lock",
+        "difficulty": "Medium",
+        "task": "Determine why the second thread cannot enter the synchronized block while the first thread is sleeping.",
+        "expectedBehavior": "The second thread waits until the first thread releases the monitor.",
+        "buggyCode": "class Printer {\n    synchronized void print() throws InterruptedException {\n        System.out.println(\"Start\");\n        Thread.sleep(3000);\n        System.out.println(\"End\");\n    }\n}",
+        "answer": "sleep pauses the thread but does not release the monitor held by the synchronized method.",
+        "explanation": "The thread remains the owner of the Printer monitor while sleeping. Other threads trying to enter another synchronized method on the same Printer instance remain blocked.",
+        "hints": [
+          "What monitor does the synchronized method acquire?",
+          "What does sleep release?",
+          "Compare sleep with wait."
+        ],
+        "correctedCode": "// If waiting for a condition, use wait/notify under the appropriate monitor.\n// If simply delaying work, sleep is fine, but do not hold a lock unnecessarily.",
+        "keyTakeaways": [
+          "sleep does not release monitors.",
+          "wait releases the monitor while waiting.",
+          "Avoid long-running operations while holding locks."
+        ],
+        "followUpQuestions": [
+          "What happens when wait() is called?",
+          "Does sleep throw InterruptedException?",
+          "Why should long I/O usually not happen inside a synchronized block?"
+        ]
+      },
+      {
+        "questionNo": 8,
+        "title": "AtomicInteger solves a single-counter race",
+        "difficulty": "Easy",
+        "task": "Replace the unsafe shared counter with an atomic operation.",
+        "expectedBehavior": "Every increment must be retained without using an explicit synchronized block.",
+        "buggyCode": "class Counter {\n    int count;\n\n    void increment() {\n        count++;\n    }\n\n    int get() {\n        return count;\n    }\n}",
+        "answer": "The counter can lose updates when multiple threads call increment concurrently.",
+        "explanation": "AtomicInteger provides atomic increment operations using concurrency primitives such as CAS. It is a good fit when the shared state is a single integer counter.",
+        "hints": [
+          "Does the requirement involve only one integer?",
+          "Is there a standard atomic class for this?",
+          "Look at incrementAndGet()."
+        ],
+        "correctedCode": "class Counter {\n    private final AtomicInteger count = new AtomicInteger();\n\n    void increment() {\n        count.incrementAndGet();\n    }\n\n    int get() {\n        return count.get();\n    }\n}",
+        "keyTakeaways": [
+          "AtomicInteger provides atomic counter operations.",
+          "It can avoid explicit locking for simple state transitions.",
+          "Choose synchronization based on the invariant being protected."
+        ],
+        "followUpQuestions": [
+          "How does compareAndSet work?",
+          "When would synchronized be better?",
+          "What is the difference between AtomicInteger and LongAdder?"
+        ]
+      },
+      {
+        "questionNo": 9,
+        "title": "join provides completion coordination",
+        "difficulty": "Easy",
+        "task": "Explain why reading the result before join is unsafe and how join changes the ordering.",
+        "expectedBehavior": "The main thread must read the worker result only after the worker has completed.",
+        "buggyCode": "class Task implements Runnable {\n    int result;\n\n    public void run() {\n        result = 42;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Task task = new Task();\n        Thread t = new Thread(task);\n        t.start();\n\n        System.out.println(task.result);\n    }\n}",
+        "answer": "The main thread may print 0 because the worker may not have executed yet; reading the result before completion is not properly coordinated.",
+        "explanation": "Starting a thread does not mean it has completed its work. Calling join establishes that the worker's actions happen-before a successful return from join, so the result can then be safely read.",
+        "hints": [
+          "When is result assigned?",
+          "Does start wait for run() to finish?",
+          "What synchronization edge does join provide?"
+        ],
+        "correctedCode": "t.start();\nt.join();\nSystem.out.println(task.result);",
+        "keyTakeaways": [
+          "start() begins asynchronous execution.",
+          "join() waits for thread completion.",
+          "Successful join provides visibility of completed worker actions."
+        ],
+        "followUpQuestions": [
+          "Does join block the calling thread?",
+          "Can join throw InterruptedException?",
+          "How is join different from sleep?"
+        ]
+      },
+      {
+        "questionNo": 10,
+        "title": "ConcurrentHashMap does not make compound operations automatically atomic",
+        "difficulty": "Hard",
+        "task": "Identify the race in the get-then-put sequence and replace it with an atomic map operation.",
+        "expectedBehavior": "Concurrent updates for the same key must not overwrite one another.",
+        "buggyCode": "ConcurrentHashMap<String, Integer> counts =\n    new ConcurrentHashMap<>();\n\nint old = counts.getOrDefault(\"java\", 0);\ncounts.put(\"java\", old + 1);",
+        "answer": "The individual get and put calls are thread-safe, but the combined read-modify-write sequence is not atomic.",
+        "explanation": "Two threads can read the same value and then both write the same incremented value. Use merge(), compute(), or another atomic map operation.",
+        "hints": [
+          "Are get and put one operation?",
+          "Can two threads read the same old value?",
+          "Which ConcurrentHashMap API expresses an atomic update?"
+        ],
+        "correctedCode": "counts.merge(\"java\", 1, Integer::sum);",
+        "keyTakeaways": [
+          "Thread-safe individual operations do not automatically make sequences atomic.",
+          "ConcurrentHashMap provides atomic compound APIs such as merge and compute.",
+          "Choose the API that matches the state transition."
+        ],
+        "followUpQuestions": [
+          "How does computeIfAbsent work?",
+          "When would synchronized still be necessary?",
+          "What is a race condition?"
+        ]
+      }
+    ]
+  }
+  ],
+  "type-casting": [
+    {
+    "id": "type-casting",
+    "title": "Type Casting",
+    "summary": "Practice primitive widening and narrowing, reference upcasting and downcasting, instanceof, polymorphism, ClassCastException, and compile-time versus runtime type rules.",
+    "learningGoals": [
+      "Distinguish primitive casting from reference casting.",
+      "Understand widening and narrowing conversions.",
+      "Use upcasting safely with inheritance.",
+      "Perform downcasting only when the runtime object has the expected subtype.",
+      "Predict compile-time errors and ClassCastException.",
+      "Understand how reference type affects accessible members while runtime type affects overridden method dispatch."
+    ],
+    "questions": [
+      {
+        "questionNo": 1,
+        "title": "Widening primitive conversion",
+        "difficulty": "Easy",
+        "task": "Predict the output and explain why an explicit cast is not required.",
+        "expectedBehavior": "The integer value is converted to a wider floating-point type without a compilation error.",
+        "buggyCode": "public class Main {\n    public static void main(String[] args) {\n        int value = 100;\n        double result = value;\n\n        System.out.println(result);\n    }\n}",
+        "answer": "The output is 100.0.",
+        "explanation": "Assigning int to double is a widening primitive conversion. Java can perform this conversion implicitly because the destination type has a wider range/representation for this conversion.",
+        "hints": [
+          "Compare the source and destination primitive types.",
+          "Is int to double a widening or narrowing conversion?",
+          "Does widening normally require an explicit cast?"
+        ],
+        "correctedCode": "int value = 100;\ndouble result = value;",
+        "keyTakeaways": [
+          "Widening conversions can happen implicitly.",
+          "int can be assigned to double without an explicit cast.",
+          "Widening and narrowing are different conversion categories."
+        ],
+        "followUpQuestions": [
+          "Can byte be assigned to int without casting?",
+          "Can double be assigned to int without casting?",
+          "What happens to precision when converting int to float?"
+        ]
+      },
+      {
+        "questionNo": 2,
+        "title": "Narrowing conversion requires an explicit cast",
+        "difficulty": "Easy",
+        "task": "Identify the compilation issue and apply the correct narrowing cast.",
+        "expectedBehavior": "The code should compile and produce an integer value after an explicit narrowing conversion.",
+        "buggyCode": "public class Main {\n    public static void main(String[] args) {\n        double price = 99.99;\n        int value = price;\n\n        System.out.println(value);\n    }\n}",
+        "answer": "The code does not compile because double to int is a narrowing conversion and requires an explicit cast.",
+        "explanation": "Narrowing can lose fractional information or range. The explicit cast tells the compiler that the loss is intentional. The fractional part is discarded for this conversion.",
+        "hints": [
+          "Can every double value be represented exactly by int?",
+          "Does Java allow this conversion implicitly?",
+          "What happens to .99?"
+        ],
+        "correctedCode": "double price = 99.99;\nint value = (int) price;\nSystem.out.println(value);",
+        "keyTakeaways": [
+          "Narrowing primitive conversions generally require an explicit cast.",
+          "Casting double to int discards the fractional part.",
+          "Explicit casting does not guarantee that information will be preserved."
+        ],
+        "followUpQuestions": [
+          "What happens when the double is larger than Integer.MAX_VALUE?",
+          "What is the difference between casting and Math.round()?",
+          "Can long be implicitly converted to int?"
+        ]
+      },
+      {
+        "questionNo": 3,
+        "title": "Downcasting to the wrong subtype",
+        "difficulty": "Medium",
+        "task": "Predict the runtime exception and explain why the compiler allows the cast.",
+        "expectedBehavior": "The code compiles but fails at runtime when the actual object is not a Car.",
+        "buggyCode": "class Vehicle {\n    void move() {\n        System.out.println(\"Moving\");\n    }\n}\n\nclass Car extends Vehicle {\n    void drive() {\n        System.out.println(\"Driving\");\n    }\n}\n\nclass Bike extends Vehicle {\n    void ride() {\n        System.out.println(\"Riding\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Vehicle v = new Bike();\n        Car c = (Car) v;\n        c.drive();\n    }\n}",
+        "answer": "The code compiles but throws ClassCastException because the runtime object is a Bike, not a Car.",
+        "explanation": "The reference type Vehicle can potentially refer to a Car, so the compiler permits the explicit downcast. At runtime Java checks the actual object type and rejects the cast when it is incompatible.",
+        "hints": [
+          "What is the declared type of v?",
+          "What object was actually created?",
+          "Which type does the cast require at runtime?"
+        ],
+        "correctedCode": "if (v instanceof Car car) {\n    car.drive();\n}",
+        "keyTakeaways": [
+          "Downcasting is checked at runtime.",
+          "An incompatible runtime object causes ClassCastException.",
+          "instanceof can guard a downcast."
+        ],
+        "followUpQuestions": [
+          "Why does the compiler allow the cast?",
+          "What is pattern matching for instanceof?",
+          "Can a Vehicle reference always be safely cast to Car?"
+        ]
+      },
+      {
+        "questionNo": 4,
+        "title": "Upcasting is implicit and safe",
+        "difficulty": "Easy",
+        "task": "Explain why a subclass object can be assigned to a superclass reference without an explicit cast.",
+        "expectedBehavior": "The assignment compiles and the overridden method uses dynamic dispatch.",
+        "buggyCode": "class Animal {\n    void sound() {\n        System.out.println(\"Animal\");\n    }\n}\n\nclass Dog extends Animal {\n    @Override\n    void sound() {\n        System.out.println(\"Dog\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Dog dog = new Dog();\n        Animal animal = dog;\n        animal.sound();\n    }\n}",
+        "answer": "The output is Dog.",
+        "explanation": "Assigning Dog to an Animal reference is upcasting and is implicit. The reference can access members defined by Animal, but overridden instance methods use the runtime object's implementation, so Dog.sound() executes.",
+        "hints": [
+          "Is Dog an Animal?",
+          "Does upcasting require an explicit cast?",
+          "Which method implementation is selected at runtime?"
+        ],
+        "correctedCode": "Animal animal = new Dog();\nanimal.sound();",
+        "keyTakeaways": [
+          "Upcasting from subclass to superclass is implicit.",
+          "Polymorphic method dispatch uses the runtime object.",
+          "The reference type controls which members are accessible at compile time."
+        ],
+        "followUpQuestions": [
+          "Can animal.driveDogSpecificMethod() be called directly?",
+          "How would downcasting expose a Dog-specific method?",
+          "Are fields polymorphic in the same way as methods?"
+        ]
+      },
+      {
+        "questionNo": 5,
+        "title": "Primitive narrowing overflow",
+        "difficulty": "Medium",
+        "task": "Predict the result of narrowing a large int to byte and explain the overflow behavior.",
+        "expectedBehavior": "The result must be explained using the low-order bits retained by the narrowing conversion.",
+        "buggyCode": "public class Main {\n    public static void main(String[] args) {\n        int value = 130;\n        byte result = (byte) value;\n\n        System.out.println(result);\n    }\n}",
+        "answer": "The output is -126.",
+        "explanation": "byte is an 8-bit signed type. Narrowing from int to byte retains the low-order 8 bits, which represent -126 in signed byte form. The conversion does not throw an exception for this numeric narrowing.",
+        "hints": [
+          "What is the byte range?",
+          "Convert 130 to its low-order 8 bits.",
+          "Remember that byte is signed."
+        ],
+        "correctedCode": "int value = 130;\nbyte result = (byte) value;",
+        "keyTakeaways": [
+          "Narrowing numeric conversion can change the value.",
+          "Primitive casts do not throw ClassCastException.",
+          "Always consider range loss when narrowing."
+        ],
+        "followUpQuestions": [
+          "What is (byte) 128?",
+          "What is (byte) 255?",
+          "How is primitive casting different from reference casting?"
+        ]
+      },
+      {
+        "questionNo": 6,
+        "title": "instanceof prevents an invalid downcast",
+        "difficulty": "Medium",
+        "task": "Correct the code so that process() invokes drive only for Car objects.",
+        "expectedBehavior": "A Bike should not be cast to Car and should be handled safely.",
+        "buggyCode": "class Vehicle {}\nclass Car extends Vehicle {\n    void drive() {}\n}\nclass Bike extends Vehicle {\n    void ride() {}\n}\n\nstatic void process(Vehicle vehicle) {\n    Car car = (Car) vehicle;\n    car.drive();\n}",
+        "answer": "The direct cast can throw ClassCastException when vehicle is not a Car.",
+        "explanation": "A Vehicle reference can point to many subclasses. instanceof checks the runtime type before performing the downcast, preventing an invalid cast.",
+        "hints": [
+          "A Vehicle reference does not guarantee a Car object.",
+          "Check the runtime type first.",
+          "Use pattern matching to combine the check and cast."
+        ],
+        "correctedCode": "static void process(Vehicle vehicle) {\n    if (vehicle instanceof Car car) {\n        car.drive();\n    }\n}",
+        "keyTakeaways": [
+          "Use instanceof before unsafe downcasts.",
+          "Pattern matching can combine type testing and casting.",
+          "Prefer polymorphism when explicit type checks become excessive."
+        ],
+        "followUpQuestions": [
+          "When is instanceof a design smell?",
+          "How could polymorphism remove the cast?",
+          "What happens if vehicle is null?"
+        ]
+      },
+      {
+        "questionNo": 7,
+        "title": "Reference type controls accessible methods",
+        "difficulty": "Medium",
+        "task": "Explain why the compiler rejects the direct call to the subclass-specific method.",
+        "expectedBehavior": "The code should compile only after a valid downcast.",
+        "buggyCode": "class Animal {\n    void sound() {}\n}\n\nclass Dog extends Animal {\n    void fetch() {}\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Animal animal = new Dog();\n        animal.fetch();\n    }\n}",
+        "answer": "The code does not compile because fetch() is not declared in Animal.",
+        "explanation": "The object is a Dog at runtime, but the reference type is Animal. Compile-time member access is based on the reference type. A valid downcast is required to access Dog-specific members.",
+        "hints": [
+          "Look at the declared type of animal.",
+          "Is fetch() declared in Animal?",
+          "What cast would expose Dog-specific members?"
+        ],
+        "correctedCode": "Animal animal = new Dog();\n\nif (animal instanceof Dog dog) {\n    dog.fetch();\n}",
+        "keyTakeaways": [
+          "Reference type controls compile-time member access.",
+          "Runtime type controls overridden method dispatch.",
+          "Downcasting exposes subtype-specific members only when valid."
+        ],
+        "followUpQuestions": [
+          "Why does animal.sound() work?",
+          "What is dynamic method dispatch?",
+          "Can a superclass reference access subclass fields directly?"
+        ]
+      },
+      {
+        "questionNo": 8,
+        "title": "Casting does not change the object",
+        "difficulty": "Hard",
+        "task": "Explain what changes when a reference is cast and what remains unchanged about the actual object.",
+        "expectedBehavior": "The cast changes the reference's compile-time view, not the runtime object's class.",
+        "buggyCode": "class Animal {\n    void sound() {\n        System.out.println(\"Animal\");\n    }\n}\n\nclass Dog extends Animal {\n    void bark() {\n        System.out.println(\"Bark\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Animal animal = new Dog();\n        Dog dog = (Dog) animal;\n\n        dog.bark();\n        System.out.println(animal.getClass().getSimpleName());\n    }\n}",
+        "answer": "The output is Bark followed by Dog. Casting does not create a new Dog or change the object's runtime type; it changes how the existing reference is viewed by the compiler.",
+        "explanation": "animal and dog refer to the same Dog object. The cast enables access to Dog-specific members through the dog reference. The runtime class remains Dog throughout.",
+        "hints": [
+          "How many objects are created?",
+          "Do animal and dog point to the same object?",
+          "What does a reference cast actually change?"
+        ],
+        "correctedCode": "Animal animal = new Dog();\nDog dog = (Dog) animal; // same object, narrower reference type",
+        "keyTakeaways": [
+          "Casting a reference does not create a new object.",
+          "The same object can be viewed through different reference types.",
+          "Runtime class remains unchanged after a reference cast."
+        ],
+        "followUpQuestions": [
+          "What is the difference between casting and object conversion?",
+          "Can casting change the object's fields?",
+          "Why can an invalid downcast fail at runtime?"
+        ]
+      }
+    ]
+  }
   ]
 }
