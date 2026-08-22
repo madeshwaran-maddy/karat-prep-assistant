@@ -409,6 +409,22 @@ def format_display_date(value):
         return str(value)
 
 
+def require_reviewer(request: Request):
+    candidate_token = (request.cookies.get("auth_token") or "").strip()
+    if not candidate_token.startswith("candidate-"):
+        raise HTTPException(status_code=401, detail="Authentication required.")
+
+    candidate_id = candidate_token.replace("candidate-", "", 1)
+    with engine.connect() as connection:
+        role = connection.execute(
+            text("SELECT role FROM candidates WHERE id::text = :candidate_id"),
+            {"candidate_id": candidate_id},
+        ).scalar()
+
+    if role != "reviewer":
+        raise HTTPException(status_code=403, detail="Reviewer access required.")
+
+
 # ---------------------------------------------------------
 # Health
 # ---------------------------------------------------------
@@ -448,7 +464,8 @@ def db_health():
 
 
 @app.get("/api/reviewer/candidates")
-def get_reviewer_candidates():
+def get_reviewer_candidates(request: Request):
+    require_reviewer(request)
     with engine.connect() as connection:
         rows = connection.execute(
             text(
@@ -506,7 +523,8 @@ def get_reviewer_candidates():
 
 
 @app.get("/api/reviewer/candidates/{candidate_id}")
-def get_reviewer_candidate(candidate_id: str):
+def get_reviewer_candidate(candidate_id: str, request: Request):
+    require_reviewer(request)
     with engine.connect() as connection:
         candidate_row = connection.execute(
             text(
@@ -730,7 +748,8 @@ def _progress_topic_rows(overview_rows, progress_rows, kind):
 
 
 @app.get("/api/reviewer/candidates/{candidate_id}/learning-progress")
-def get_reviewer_learning_progress(candidate_id: str):
+def get_reviewer_learning_progress(candidate_id: str, request: Request):
+    require_reviewer(request)
     with engine.connect() as connection:
         candidate = connection.execute(
             text("SELECT id, language_selected FROM candidates WHERE id::text = :candidate_id"),
@@ -828,7 +847,8 @@ def get_reviewer_learning_progress(candidate_id: str):
 
 
 @app.put("/api/reviewer/candidates/{candidate_id}")
-def update_reviewer_candidate(candidate_id: str, payload: CandidateUpdateRequest):
+def update_reviewer_candidate(candidate_id: str, payload: CandidateUpdateRequest, request: Request):
+    require_reviewer(request)
     with engine.begin() as connection:
         existing = connection.execute(
             text("SELECT id FROM candidates WHERE id::text = :candidate_id"),

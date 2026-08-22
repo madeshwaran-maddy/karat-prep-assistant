@@ -10,6 +10,12 @@ function hasAuthCookie() {
   return document.cookie.split("; ").some((cookie) => cookie.startsWith("auth_token="));
 }
 
+function getCookieValue(name: string) {
+  if (typeof document === "undefined") return "";
+  const cookie = document.cookie.split("; ").find((item) => item.startsWith(`${name}=`));
+  return cookie ? decodeURIComponent(cookie.slice(name.length + 1)) : "";
+}
+
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -18,9 +24,17 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const isPublic = publicPaths.has(pathname);
     const loggedIn = hasAuthCookie();
+    const isReviewerPath = pathname.startsWith("/reviewer-dashboard");
+    const isReviewer = getCookieValue("user_role") === "reviewer";
 
     if (!loggedIn && !isPublic) {
       router.replace("/login");
+      setIsChecking(false);
+      return;
+    }
+
+    if (loggedIn && isReviewerPath && !isReviewer) {
+      router.replace("/dashboard");
       setIsChecking(false);
       return;
     }
@@ -39,6 +53,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (!hasAuthCookie() && !publicPaths.has(pathname)) {
+    return null;
+  }
+
+  if (hasAuthCookie() && pathname.startsWith("/reviewer-dashboard") && getCookieValue("user_role") !== "reviewer") {
     return null;
   }
 

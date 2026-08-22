@@ -2,9 +2,15 @@
 
 import { AppHeader } from "@/components/AppHeader";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function RoleBasedLandingPage() {
   const router = useRouter();
+  const [isReviewer, setIsReviewer] = useState(false);
+
+  useEffect(() => {
+    setIsReviewer(document.cookie.split("; ").some((cookie) => cookie === "user_role=reviewer"));
+  }, []);
 
   const handleCandidate = () => {
     router.push("/candidate-dashboard");
@@ -93,7 +99,6 @@ export default function RoleBasedLandingPage() {
                 </button>
               </div>
 
-              {/* Reviewer Card */}
               <div className="rounded-2xl border-2 border-indigo-400 bg-gradient-to-br from-indigo-50/80 to-white px-10 py-9 text-center transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
 
                 {/* Icon */}
@@ -169,7 +174,8 @@ export default function RoleBasedLandingPage() {
 
                 <button
                   onClick={handleReviewer}
-                  className="mt-8 w-[225px] rounded-xl bg-indigo-500 px-6 py-4 text-[20px] font-semibold text-white shadow-md transition hover:bg-indigo-600 active:scale-[0.98]"
+                  disabled={!isReviewer}
+                  className="mt-8 w-[225px] rounded-xl bg-indigo-500 px-6 py-4 text-[20px] font-semibold text-white shadow-md transition hover:bg-indigo-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
                 >
                   Continue
                 </button>

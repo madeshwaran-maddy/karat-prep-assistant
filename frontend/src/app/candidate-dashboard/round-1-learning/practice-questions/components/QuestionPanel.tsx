@@ -11,6 +11,7 @@ import NavigationBar from "./NavigationBar";
 import QuestionIndexBar from "./QuestionIndexBar";
 import { useEffect, useRef, useState } from "react";
 import { useCandidateLanguage } from "../../../../../components/CandidateLanguageProvider";
+import CompilerPopup from "./CompilerPopup";
 
 export default function QuestionPanel() {
 
@@ -29,6 +30,7 @@ export default function QuestionPanel() {
   } = usePracticeQuestions();
 
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [compilerOpen, setCompilerOpen] = useState(false);
   const { language } = useCandidateLanguage();
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const previousQuestionRef = useRef<{ section: string; topicId: string; questionNo: number } | null>(null);
@@ -156,6 +158,14 @@ export default function QuestionPanel() {
           </div>
         </div>
 
+        <button
+          type="button"
+          onClick={() => setCompilerOpen(true)}
+          className="fixed right-4 top-1/2 z-40 -translate-y-1/2 rounded-l-xl bg-slate-900 px-3 py-4 text-sm font-semibold text-white shadow-xl transition hover:bg-slate-700 sm:right-5 sm:rounded-xl sm:px-4"
+        >
+          Compiler
+        </button>
+
         <QuestionIndexBar />
 
         {topic.summary && (
@@ -256,6 +266,13 @@ export default function QuestionPanel() {
         <NavigationBar />
 
       </div>
+
+      {compilerOpen && (
+        <CompilerPopup
+          language={language}
+          onClose={() => setCompilerOpen(false)}
+        />
+      )}
 
     </div>
 

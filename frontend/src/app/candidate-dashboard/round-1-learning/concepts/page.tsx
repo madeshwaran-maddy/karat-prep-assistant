@@ -100,6 +100,9 @@ export default function ConceptsPage() {
   const previousConceptRef = useRef<string>(selected);
 
   const currentConcept = concepts.find((c) => c.id === selected)!;
+  const currentConceptIndex = concepts.findIndex((concept) => concept.id === selected);
+  const hasPreviousConcept = currentConceptIndex > 0;
+  const hasNextConcept = currentConceptIndex >= 0 && currentConceptIndex < concepts.length - 1;
 
   // Handle concept selection with progress tracking
   useEffect(() => {
@@ -201,6 +204,16 @@ export default function ConceptsPage() {
     }
   };
 
+  const handleConceptNavigation = (direction: -1 | 1) => {
+    const nextIndex = currentConceptIndex + direction;
+    const nextConcept = concepts[nextIndex];
+
+    if (!nextConcept) return;
+
+    setElapsedTime(0);
+    setSelected(nextConcept.id);
+  };
+
   const currentConceptProgress = progress[selected];
   const isConceptCompleted = currentConceptProgress?.status === "completed";
 
@@ -284,6 +297,25 @@ export default function ConceptsPage() {
 
           <div className={`flex-1 min-h-0 ${styles.contentScrollable}`}>
             <ConceptContent concept={currentConcept} />
+          </div>
+
+          <div className="mt-4 flex flex-col-reverse gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <button
+              type="button"
+              onClick={() => handleConceptNavigation(-1)}
+              disabled={!hasPreviousConcept}
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
+            >
+              Previous Topic
+            </button>
+            <button
+              type="button"
+              onClick={() => handleConceptNavigation(1)}
+              disabled={!hasNextConcept}
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+            >
+              Next Topic
+            </button>
           </div>
         </div>
       </div>

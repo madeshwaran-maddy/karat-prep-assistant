@@ -204,7 +204,6 @@ export default function PracticeQuestionProvider({
     const [questionIndex,setQuestionIndex] =
     useState(0);
     const hasAppliedDefaultSelection = useRef(false);
-    const lastProgressCountRef = useRef(-1);
     const lastLanguageIdRef = useRef(language.id);
 
     const topic = useMemo(()=>{
@@ -239,7 +238,6 @@ export default function PracticeQuestionProvider({
         if (lastLanguageIdRef.current !== language.id) {
             lastLanguageIdRef.current = language.id;
             hasAppliedDefaultSelection.current = false;
-            lastProgressCountRef.current = -1;
         }
 
         // Wait until progress is actually loaded (not loading AND has data or is empty)
@@ -248,17 +246,13 @@ export default function PracticeQuestionProvider({
             return;
         }
 
-        // Check if progress count has changed
-        const progressCount = Object.values(progress).length;
-        console.log("📊 Progress count:", progressCount, "Last count:", lastProgressCountRef.current);
-
-        // Only apply if this is the first time we've seen this progress count
-        if (lastProgressCountRef.current === progressCount && hasAppliedDefaultSelection.current) {
-            console.log("Progress count unchanged and already applied, skipping");
+        // Default selection is only for the initial load; user navigation and progress updates must persist.
+        if (hasAppliedDefaultSelection.current) {
+            console.log("Default selection already applied, skipping");
             return;
         }
 
-        lastProgressCountRef.current = progressCount;
+        const progressCount = Object.values(progress).length;
 
         console.log("🔍 Applying default selection...");
         console.log("Progress data entries:", progressCount);

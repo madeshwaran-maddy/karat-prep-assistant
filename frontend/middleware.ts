@@ -5,6 +5,7 @@ const publicRoutes = ["/", "/login", "/signup"];
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get("auth_token")?.value;
+  const role = request.cookies.get("user_role")?.value;
   const { pathname } = request.nextUrl;
 
   const isPublic = publicRoutes.includes(pathname);
@@ -14,6 +15,10 @@ export function middleware(request: NextRequest) {
   }
 
   if (token && (pathname === "/" || pathname === "/login" || pathname === "/signup")) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  if (token && pathname.startsWith("/reviewer-dashboard") && role !== "reviewer") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 

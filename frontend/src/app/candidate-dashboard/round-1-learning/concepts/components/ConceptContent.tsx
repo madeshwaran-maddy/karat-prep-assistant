@@ -91,7 +91,7 @@ export default function ConceptContent({
       )}
 
       <section>
-        <BulletSection title="First remember these 3 points" items={concept.explanation} />
+        <BulletSection title="First remember these points" items={concept.explanation} />
       </section>
 
       {concept.detailSections?.map((section, index) => (

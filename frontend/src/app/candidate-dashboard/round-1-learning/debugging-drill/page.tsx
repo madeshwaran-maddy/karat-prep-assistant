@@ -92,7 +92,7 @@ export default function DebuggingDrillPage() {
             <div className="analysis-label">Output and Bug Analysis</div>
             <textarea
               className="analysis-textarea"
-              placeholder="Describe the output and your bug analysis here..."
+              placeholder="Describe the output and your bug in below format...\nBug1: <Describe the bug>\nBug2: <Describe the bug>\nand so on..."
               value={analysisText || ""}
               onChange={(e) => updateAnalysis(e.target.value)}
             />

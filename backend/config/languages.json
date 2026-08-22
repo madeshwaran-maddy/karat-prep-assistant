@@ -6,6 +6,8 @@
       "fileExtension": "java",
       "judge0LanguageId": 5,
       "judge0URL":"https://extra-ce.judge0.com",
+      "practicejudge0LanguageId": 91,
+      "practicejudge0URL":"https://ce.judge0.com",
       "enabled": true
     },
     {
@@ -14,6 +16,8 @@
       "fileExtension": "js",
       "judge0LanguageId": 97,
       "judge0URL": "https://ce.judge0.com",
+      "practicejudge0LanguageId": 97,
+      "practicejudge0URL":"https://ce.judge0.com",
       "enabled": true
     }
   ]

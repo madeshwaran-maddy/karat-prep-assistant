@@ -10,6 +10,8 @@ export interface LanguageConfig {
   fileExtension: string;
   judge0LanguageId: number;
   judge0URL: string;
+  practicejudge0LanguageId: number;
+  practicejudge0URL: string;
   enabled: boolean;
 }
 
